@@ -1,0 +1,7 @@
+apiVersion: kustomize.manifests.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - role.yaml
+  - rolebinding.yaml
+  - user_cluster_roles.yaml
