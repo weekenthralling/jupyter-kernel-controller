@@ -3,6 +3,8 @@ package controller
 import (
 	"context"
 	"fmt"
+	"github.com/jupyter_kernel_controller/reconcilehelper"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"reflect"
 	"strconv"
 	"strings"
@@ -45,6 +47,7 @@ type KernelReconciler struct {
 }
 
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
+// +kubebuilder:rbac:groups=core,resources=services,verbs="*"
 // +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;patch
 // +kubebuilder:rbac:groups=jupyter.org,resources=kernels;kernels/status;kernels/finalizers,verbs="*"
 
@@ -111,6 +114,39 @@ func (r *KernelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
+	// Reconcile service by instance and set reference
+	service := r.generateService(instance, pod)
+	if err := ctrl.SetControllerReference(instance, service, r.Scheme); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// Check if the Service already exists
+	foundService := &corev1.Service{}
+	justCreated := false
+	err = r.Get(ctx, types.NamespacedName{Name: service.Name, Namespace: service.Namespace}, foundService)
+	if err != nil && apierrs.IsNotFound(err) {
+		log.Info("Creating Service", "namespace", service.Namespace, "name", service.Name)
+		err = r.Create(ctx, service)
+		justCreated = true
+		if err != nil {
+			log.Error(err, "unable to create Service")
+			return ctrl.Result{}, err
+		}
+	} else if err != nil {
+		log.Error(err, "error getting Service")
+		return ctrl.Result{}, err
+	}
+
+	// Update the foundService object and write the result back if there are any changes
+	if !justCreated && reconcilehelper.CopyServiceFields(service, foundService) {
+		log.Info("Updating Service\n", "namespace", service.Namespace, "name", service.Name)
+		err = r.Update(ctx, foundService)
+		if err != nil {
+			log.Error(err, "unable to update Service")
+			return ctrl.Result{}, err
+		}
+	}
+
 	err = updateKernelStatus(r, instance, foundPod, req)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -150,6 +186,44 @@ func (r *KernelReconciler) generatePod(instance *v1alpha1.Kernel) *corev1.Pod {
 	// set kernel port env
 	addKernelPortEnvIfNotFound(pod, r.Config)
 	return pod
+}
+
+// generateService generate service by kernel
+func (r *KernelReconciler) generateService(instance *v1alpha1.Kernel, pod *corev1.Pod) *corev1.Service {
+	var servicePort []corev1.ServicePort
+	addServicePort := func(envName, portName string) {
+		for _, env := range pod.Spec.Containers[0].Env {
+			if env.Name == envName {
+				port, _ := strconv.Atoi(env.Value)
+				servicePort = append(servicePort, corev1.ServicePort{
+					Name:       portName,
+					Port:       int32(port),
+					Protocol:   "TCP",
+					TargetPort: intstr.FromInt32(int32(port)),
+				})
+			}
+		}
+	}
+
+	// add service port from pod container env
+	addServicePort("SHELL_PORT", "shell-port")
+	addServicePort("IOPUB_PORT", "iopub-port")
+	addServicePort("STDIN_PORT", "stdin-port")
+	addServicePort("HB_PORT", "hb-port")
+	addServicePort("CONTROL_PORT", "control-port")
+
+	svc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      instance.Name,
+			Namespace: instance.Namespace,
+		},
+		Spec: corev1.ServiceSpec{
+			Type:     "ClusterIP",
+			Selector: map[string]string{"Kernel-name": instance.Name},
+			Ports:    servicePort,
+		},
+	}
+	return svc
 }
 
 // addKernelPortEnvIfNotFound Define a helper function to create an EnvVar and add it to kernelPorts if not found
