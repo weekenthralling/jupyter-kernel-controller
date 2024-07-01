@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/jupyter_kernel_controller/api/v1alpha1"
+	"github.com/jupyter_kernel_controller/config"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,17 +21,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-const DefaultContainerPort = 8888
-const DefaultServingPort = 80
-const AnnotationRewriteURI = "kernels.kubeflow.org/http-rewrite-uri"
-const AnnotationHeadersRequestSet = "kernels.kubeflow.org/http-headers-request-set"
-
-const PrefixEnvVar = "KERNEL_PREFIX"
-
-// The default fsGroup of PodSecurityContext.
-// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#podsecuritycontext-v1-core
-const DefaultFSGroup = int64(100)
 
 /*
 We generally want to ignore (not requeue) NotFound errors, since we'll get a
@@ -46,6 +37,7 @@ func ignoreNotFound(err error) error {
 // KernelReconciler reconciles a Kernel object
 type KernelReconciler struct {
 	client.Client
+	Config        *config.Config
 	Log           logr.Logger
 	Scheme        *runtime.Scheme
 	Metrics       *Metrics
@@ -96,8 +88,8 @@ func (r *KernelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, ignoreNotFound(err)
 	}
 
-	// generate pod
-	pod := generatePod(instance)
+	// Reconcile pod by instance and set reference
+	pod := r.generatePod(instance)
 	if err := ctrl.SetControllerReference(instance, pod, r.Scheme); err != nil {
 		return ctrl.Result{}, err
 	}
@@ -127,7 +119,8 @@ func (r *KernelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	return ctrl.Result{}, nil
 }
 
-func generatePod(instance *v1alpha1.Kernel) *corev1.Pod {
+// generatePod generate pod from kernel spec template
+func (r *KernelReconciler) generatePod(instance *v1alpha1.Kernel) *corev1.Pod {
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      instance.Name,
@@ -140,13 +133,13 @@ func generatePod(instance *v1alpha1.Kernel) *corev1.Pod {
 		Spec: *instance.Spec.Template.Spec.DeepCopy(),
 	}
 
-	// copy all of the kernel labels to the pod including poddefault related labels
+	// copy all the kernel labels to the pod including poddefault related labels
 	l := &pod.ObjectMeta.Labels
 	for k, v := range instance.ObjectMeta.Labels {
 		(*l)[k] = v
 	}
 
-	// copy all of the Kernel annotations to the pod.
+	// copy all the kernel annotations to the pod.
 	a := &pod.ObjectMeta.Annotations
 	for k, v := range instance.ObjectMeta.Annotations {
 		if !strings.Contains(k, "kubectl") && !strings.Contains(k, "kernel") {
@@ -154,7 +147,52 @@ func generatePod(instance *v1alpha1.Kernel) *corev1.Pod {
 		}
 	}
 
+	// set kernel port env
+	addKernelPortEnvIfNotFound(pod, r.Config)
 	return pod
+}
+
+// addKernelPortEnvIfNotFound Define a helper function to create an EnvVar and add it to kernelPorts if not found
+func addKernelPortEnvIfNotFound(pod *corev1.Pod, config *config.Config) {
+	setPortIfNotFound := func(kernelEnvMap map[string]corev1.EnvVar,
+		kernelPorts *[]corev1.EnvVar, name string, value int) {
+		if _, found := kernelEnvMap[name]; !found {
+			*kernelPorts = append(*kernelPorts, corev1.EnvVar{
+				Name:  name,
+				Value: strconv.Itoa(value),
+			})
+		}
+	}
+
+	kernelEnv := &pod.Spec.Containers[0].Env
+
+	// Create a map to hold kernel environment variables
+	kernelEnvMap := make(map[string]corev1.EnvVar)
+	for _, env := range *kernelEnv {
+		kernelEnvMap[env.Name] = env
+	}
+
+	// Define kernel ports to check and their corresponding values from the config
+	ports := map[string]int{
+		"SHELL_PORT":   config.ShellPort,
+		"IOPUB_PORT":   config.IOPubPort,
+		"STDIN_PORT":   config.StdinPort,
+		"HB_PORT":      config.HBPort,
+		"CONTROL_PORT": config.ControlPort,
+	}
+
+	// Initialize a slice to hold the new environment variables
+	var kernelPorts []corev1.EnvVar
+
+	// Check each port and add it if not found
+	for name, value := range ports {
+		setPortIfNotFound(kernelEnvMap, &kernelPorts, name, value)
+	}
+
+	// If there are new environment variables, append them to the container's environment variables
+	if len(kernelPorts) > 0 {
+		*kernelEnv = append(*kernelEnv, kernelPorts...)
+	}
 }
 
 func updateKernelStatus(r *KernelReconciler, kernel *v1alpha1.Kernel, pod *corev1.Pod, req ctrl.Request) error {
@@ -220,7 +258,7 @@ func createKernelStatus(r *KernelReconciler, kernel *v1alpha1.Kernel, pod *corev
 	}
 
 	// Mirroring pod condition
-	KernelConditions := []v1alpha1.KernelCondition{}
+	var KernelConditions []v1alpha1.KernelCondition
 	log.Info("Calculating Kernel's Conditions")
 	for i := range pod.Status.Conditions {
 		condition := PodCondToKernelCond(pod.Status.Conditions[i])

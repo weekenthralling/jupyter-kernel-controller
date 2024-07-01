@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/jupyter_kernel_controller/api/v1alpha1"
+	"github.com/jupyter_kernel_controller/config"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -76,6 +77,7 @@ func main() {
 
 	if err = (&controller.KernelReconciler{
 		Client:        mgr.GetClient(),
+		Config:        config.LoadConfig(),
 		Log:           ctrl.Log.WithName("controllers").WithName("Kernel"),
 		Scheme:        mgr.GetScheme(),
 		Metrics:       controller.NewMetrics(mgr.GetClient()),
