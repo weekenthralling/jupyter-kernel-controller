@@ -206,11 +206,11 @@ func (r *KernelReconciler) generateService(instance *v1alpha1.Kernel, pod *corev
 	}
 
 	// add service port from pod container env
-	addServicePort("SHELL_PORT", "shell-port")
-	addServicePort("IOPUB_PORT", "iopub-port")
-	addServicePort("STDIN_PORT", "stdin-port")
-	addServicePort("HB_PORT", "hb-port")
-	addServicePort("CONTROL_PORT", "control-port")
+	addServicePort("KERNEL_SHELL_PORT", "shell-port")
+	addServicePort("KERNEL_IOPUB_PORT", "iopub-port")
+	addServicePort("KERNEL_STDIN_PORT", "stdin-port")
+	addServicePort("KERNEL_HB_PORT", "hb-port")
+	addServicePort("KERNEL_CONTROL_PORT", "control-port")
 
 	svc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -248,11 +248,11 @@ func addKernelPortEnvIfNotFound(pod *corev1.Pod, config *config.Config) {
 
 	// Define kernel ports to check and their corresponding values from the config
 	ports := map[string]int{
-		"SHELL_PORT":   config.ShellPort,
-		"IOPUB_PORT":   config.IOPubPort,
-		"STDIN_PORT":   config.StdinPort,
-		"HB_PORT":      config.HBPort,
-		"CONTROL_PORT": config.ControlPort,
+		"KERNEL_SHELL_PORT":   config.KernelShellPort,
+		"KERNEL_IOPUB_PORT":   config.KernelIOPubPort,
+		"KERNEL_STDIN_PORT":   config.KernelStdinPort,
+		"KERNEL_HB_PORT":      config.KernelHBPort,
+		"KERNEL_CONTROL_PORT": config.KernelControlPort,
 	}
 
 	// Initialize a slice to hold the new environment variables

@@ -6,11 +6,11 @@ import (
 )
 
 type Config struct {
-	ShellPort   int `mapstructure:"shell_port"`
-	IOPubPort   int `mapstructure:"iopub_port"`
-	StdinPort   int `mapstructure:"stdin_port"`
-	HBPort      int `mapstructure:"hb_port"`
-	ControlPort int `mapstructure:"control_port"`
+	KernelShellPort   int `mapstructure:"kernel_shell_port"`
+	KernelIOPubPort   int `mapstructure:"kernel_iopub_port"`
+	KernelStdinPort   int `mapstructure:"kernel_stdin_port"`
+	KernelHBPort      int `mapstructure:"kernel_hb_port"`
+	KernelControlPort int `mapstructure:"kernel_control_port"`
 }
 
 func LoadConfig() *Config {
@@ -18,22 +18,19 @@ func LoadConfig() *Config {
 	// Enable Viper to read configuration from environment variables
 	viper.AutomaticEnv()
 
-	// Optional: Set a prefix for environment variables
-	//viper.SetEnvPrefix("CONTROLLER")
-
 	// Set default values
-	viper.SetDefault("shell_port", "52700")
-	viper.SetDefault("iopub_port", "52701")
-	viper.SetDefault("hb_port", "52702")
-	viper.SetDefault("control_port", "52703")
-	viper.SetDefault("stdin_port", "52704")
+	viper.SetDefault("kernel_shell_port", "52700")
+	viper.SetDefault("kernel_iopub_port", "52701")
+	viper.SetDefault("kernel_hb_port", "52702")
+	viper.SetDefault("kernel_control_port", "52703")
+	viper.SetDefault("kernel_stdin_port", "52704")
 
 	// Bind environment variables to Viper keys
-	viper.BindEnv("shell_port")
-	viper.BindEnv("iopub_port")
-	viper.BindEnv("hb_port")
-	viper.BindEnv("control_port")
-	viper.BindEnv("stdin_port")
+	viper.BindEnv("kernel_shell_port")
+	viper.BindEnv("kernel_iopub_port")
+	viper.BindEnv("kernel_hb_port")
+	viper.BindEnv("kernel_control_port")
+	viper.BindEnv("kernel_stdin_port")
 
 	var config Config
 	// Read environment variables and decode into the Config struct
