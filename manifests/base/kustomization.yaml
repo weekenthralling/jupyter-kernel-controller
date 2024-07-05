@@ -1,11 +1,11 @@
-apiVersion: kustomize.manifests.k8s.io/v1beta1
+apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 labels:
   - pairs:
       app: jupyter-kernel-controller
       app.kubernetes.io/name: jupyter-kernel-controller
-      app.kubernetes.io/version: "1081000"
+      app.kubernetes.io/version: b8be9ec
       app.kubernetes.io/managed-by: kubectl
     includeSelectors: false
 
@@ -18,4 +18,4 @@ resources:
 
 images:
   - name: weekenthralling/jupyter-kernel-controller
-    newTag: "1081000"
+    newTag: b8be9ec
