@@ -2,12 +2,13 @@ package main
 
 import (
 	"flag"
-	"github.com/jupyter_kernel_controller/api/v1alpha1"
+	"os"
+
+	"github.com/jupyter_kernel_controller/api/v1beta1"
 	"github.com/jupyter_kernel_controller/config"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/jupyter_kernel_controller/controller"
@@ -23,7 +24,7 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	utilruntime.Must(v1beta1.AddToScheme(scheme))
 }
 
 func main() {

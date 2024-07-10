@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jupyter_kernel_controller/api/v1beta1"
 	"github.com/jupyter_kernel_controller/reconcilehelper"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"k8s.io/client-go/tools/record"
 
 	"github.com/go-logr/logr"
-	"github.com/jupyter_kernel_controller/api/v1alpha1"
 	"github.com/jupyter_kernel_controller/config"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -62,7 +62,7 @@ func (r *KernelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		log.Info("Found event for Kernel. Re-emitting...")
 
 		// Find the Kernel that corresponds to the triggered event
-		involvedKernel := &v1alpha1.Kernel{}
+		involvedKernel := &v1beta1.Kernel{}
 		kernelName, err := kernelNameFromInvolvedObject(r.Client, &event.InvolvedObject)
 		if err != nil {
 			return ctrl.Result{}, err
@@ -86,7 +86,7 @@ func (r *KernelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// If not found, continue. Is not an event.
-	instance := &v1alpha1.Kernel{}
+	instance := &v1beta1.Kernel{}
 	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
 		log.Error(err, "unable to fetch Kernel")
 		return ctrl.Result{}, ignoreNotFound(err)
@@ -168,7 +168,7 @@ func (r *KernelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 }
 
 // generatePod generate pod from kernel spec template
-func (r *KernelReconciler) generatePod(instance *v1alpha1.Kernel) *corev1.Pod {
+func (r *KernelReconciler) generatePod(instance *v1beta1.Kernel) *corev1.Pod {
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      instance.Name,
@@ -204,7 +204,7 @@ func (r *KernelReconciler) generatePod(instance *v1alpha1.Kernel) *corev1.Pod {
 }
 
 // generateService generate service by kernel
-func (r *KernelReconciler) generateService(instance *v1alpha1.Kernel, pod *corev1.Pod) *corev1.Service {
+func (r *KernelReconciler) generateService(instance *v1beta1.Kernel, pod *corev1.Pod) *corev1.Service {
 	var servicePort []corev1.ServicePort
 	addServicePort := func(envName, portName string) {
 		for _, env := range pod.Spec.Containers[0].Env {
@@ -284,7 +284,7 @@ func addKernelPortEnvIfNotFound(pod *corev1.Pod, config *config.Config) {
 	}
 }
 
-func updateKernelStatus(r *KernelReconciler, kernel *v1alpha1.Kernel, pod *corev1.Pod, req ctrl.Request) error {
+func updateKernelStatus(r *KernelReconciler, kernel *v1beta1.Kernel, pod *corev1.Pod, req ctrl.Request) error {
 
 	log := r.Log.WithValues("Kernel", req.NamespacedName)
 	ctx := context.Background()
@@ -299,14 +299,14 @@ func updateKernelStatus(r *KernelReconciler, kernel *v1alpha1.Kernel, pod *corev
 	return r.Status().Update(ctx, kernel)
 }
 
-func createKernelStatus(r *KernelReconciler, kernel *v1alpha1.Kernel, pod *corev1.Pod, req ctrl.Request) (v1alpha1.KernelStatus, error) {
+func createKernelStatus(r *KernelReconciler, kernel *v1beta1.Kernel, pod *corev1.Pod, req ctrl.Request) (v1beta1.KernelStatus, error) {
 
 	log := r.Log.WithValues("Kernel", req.NamespacedName)
 
 	// Initialize Kernel CR Status
 	log.Info("Initializing Kernel CR Status")
-	status := v1alpha1.KernelStatus{
-		Conditions:     make([]v1alpha1.KernelCondition, 0),
+	status := v1beta1.KernelStatus{
+		Conditions:     make([]v1beta1.KernelCondition, 0),
 		ReadyReplicas:  1,
 		ContainerState: corev1.ContainerState{},
 	}
@@ -347,7 +347,7 @@ func createKernelStatus(r *KernelReconciler, kernel *v1alpha1.Kernel, pod *corev
 	}
 
 	// Mirroring pod condition
-	var KernelConditions []v1alpha1.KernelCondition
+	var KernelConditions []v1beta1.KernelCondition
 	log.Info("Calculating Kernel's Conditions")
 	for i := range pod.Status.Conditions {
 		condition := PodCondToKernelCond(pod.Status.Conditions[i])
@@ -359,9 +359,9 @@ func createKernelStatus(r *KernelReconciler, kernel *v1alpha1.Kernel, pod *corev
 	return status, nil
 }
 
-func PodCondToKernelCond(podc corev1.PodCondition) v1alpha1.KernelCondition {
+func PodCondToKernelCond(podc corev1.PodCondition) v1beta1.KernelCondition {
 
-	condition := v1alpha1.KernelCondition{}
+	condition := v1beta1.KernelCondition{}
 
 	if len(podc.Type) > 0 {
 		condition.Type = string(podc.Type)
@@ -426,7 +426,7 @@ func kernelNameFromInvolvedObject(c client.Client, object *corev1.ObjectReferenc
 // SetupWithManager sets up the controller with the Manager.
 func (r *KernelReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.Kernel{}).
+		For(&v1beta1.Kernel{}).
 		Owns(&corev1.Pod{}).
 		Complete(r)
 }

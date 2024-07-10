@@ -9,7 +9,7 @@ It has been developed using Golang and [Kubebuilder](https://book.kubebuilder.io
 The user needs to specify the PodSpec for the Jupyter kernel. For example:
 
 ```yaml
-apiVersion: jupyter.org/v1alpha1
+apiVersion: jupyter.org/v1beta1
 kind: Kernel
 metadata:
   name: my-kernel
