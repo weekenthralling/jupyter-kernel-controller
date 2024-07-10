@@ -3,12 +3,13 @@ package controller
 import (
 	"context"
 	"fmt"
-	"github.com/jupyter_kernel_controller/reconcilehelper"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/jupyter_kernel_controller/reconcilehelper"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"k8s.io/client-go/tools/record"
 
@@ -112,6 +113,17 @@ func (r *KernelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	} else if err != nil {
 		log.Error(err, "error getting pod")
 		return ctrl.Result{}, err
+	}
+
+	// If kernel completed, indicates that the kernel is automatically shut down due to long-term idleness
+	// Delete the kernel resource
+	if foundPod.Status.Phase == corev1.PodSucceeded {
+		log.Info("Culling idle kernel", "namespaces", instance.Namespace, "name", instance.Name)
+		if err := r.Delete(ctx, instance, &client.DeleteOptions{}); err != nil {
+			log.Error(err, "culling idle kernel error")
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{}, nil
 	}
 
 	// Reconcile service by instance and set reference
@@ -414,6 +426,7 @@ func kernelNameFromInvolvedObject(c client.Client, object *corev1.ObjectReferenc
 func (r *KernelReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Kernel{}).
+		Owns(&corev1.Pod{}).
 		Complete(r)
 }
 
