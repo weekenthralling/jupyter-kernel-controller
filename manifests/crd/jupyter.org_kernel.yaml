@@ -13,9 +13,6 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .status.url
-      name: URL
-      type: string
     - jsonPath: .status.conditions[?(@.type=='Ready')].status
       name: Ready
       type: string
@@ -3141,8 +3138,6 @@ spec:
               readyReplicas:
                 format: int32
                 type: integer
-              url:
-                type: string
             required:
             - conditions
             - containerState

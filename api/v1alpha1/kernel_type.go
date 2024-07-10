@@ -21,9 +21,6 @@ type KernelStatus struct {
 	ReadyReplicas int32 `json:"readyReplicas"`
 	// ContainerState is the state of underlying container.
 	ContainerState corev1.ContainerState `json:"containerState"`
-	// Kernel service url
-	// +optional
-	URL string `json:"url"`
 }
 
 type KernelCondition struct {
