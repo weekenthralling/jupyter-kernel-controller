@@ -195,6 +195,9 @@ func (r *KernelReconciler) generatePod(instance *v1alpha1.Kernel) *corev1.Pod {
 		}
 	}
 
+	// set kernel container name
+	pod.Spec.Containers[0].Name = instance.Name
+
 	// set kernel port env
 	addKernelPortEnvIfNotFound(pod, r.Config)
 	return pod
