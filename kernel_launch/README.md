@@ -30,4 +30,3 @@ The current script references [Jupyter Kernel Image](https://github.com/jupyter-
 
 - The kernel can be started using a user-specified port.
 - The public key is set as an optional parameter; however, it is required when the response address is provided.
-- The socket service is always started to receive termination signals.
