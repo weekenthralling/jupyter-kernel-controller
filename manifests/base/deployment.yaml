@@ -1,8 +1,12 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: deployment
+  name: jupyter-kernel-controller
 spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kernel-controller
   template:
     metadata:
       labels:
@@ -12,8 +16,6 @@ spec:
       containers:
         - name: manager
           image: weekenthralling/jupyter-kernel-controller:dev
-          command:
-            - /kernel-controller
           imagePullPolicy: IfNotPresent
           livenessProbe:
             httpGet:
@@ -27,4 +29,4 @@ spec:
               port: 8081
             initialDelaySeconds: 5
             periodSeconds: 10
-      serviceAccountName: service-account
+      serviceAccountName: jupyter-kernel-controller

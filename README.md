@@ -17,13 +17,22 @@ spec:
   template:
     spec:
       containers:
-        - name: my-kernel
-          image: elyra/kernel-py:3.2.3
-          env:
-            - name: KERNEL_ID
-              value: 7d25af7c-e687-46f6-98c3-0e7a0ce3a001
-            - name: KERNEL_LANGUAGE
-              value: python
+      - env:
+        - name: KERNEL_ID
+          value: 7d25af7c-e687-46f6-98c3-0e7a0ce3a001
+        - name: KERNEL_USERNAME
+          value: jovyan
+        - name: KERNEL_LANGUAGE
+          value: python
+        - name: JPY_PARENT_PID
+          value: "7"
+        - name: LC_CTYPE
+          value: C.UTF-8
+        - name: KERNEL_IDLE_TIMEOUT
+          value: "60"
+        image: weekenthralling/kernel-py:133fbe3
+        name: kernel
+      restartPolicy: Never
 ```
 
 The required fields are `containers[0].image` and (`containers[0].command` and/or `containers[0].args`). That is, the
@@ -33,14 +42,13 @@ All other fields will be filled in with default value if not specified.
 
 ## Environment parameters
 
-| Parameter               | Description                                                                        |
-|-------------------------|------------------------------------------------------------------------------------|
-| KERNEL_SHELL_PORT       | The port of kernel shell socket, default:52700                                     |
-| KERNEL_IOPUB_PORT       | The port of kernel iopub socket port, default:52701                                |
-| KERNEL_STDIN_PORT       | The port of kernel stdin socket port, default:52702                                |
-| KERNEL_HB_PORT          | The port of kernel hb socket port, default:52703                                   |
-| KERNEL_CONTROL_PORT     | The port of kernel control socket port, default:52704                              |
-| KERNEL_COMM_SOCKET_PORT | The port of kernel comment socket port, used to shutdown the kernel, default:52705 |
+| Parameter           | Description                                           |
+| ------------------- | ----------------------------------------------------- |
+| KERNEL_SHELL_PORT   | The port of kernel shell socket, default:52317        |
+| KERNEL_IOPUB_PORT   | The port of kernel iopub socket port, default:52318   |
+| KERNEL_STDIN_PORT   | The port of kernel stdin socket port, default:52319   |
+| KERNEL_HB_PORT      | The port of kernel hb socket port, default:52320      |
+| KERNEL_CONTROL_PORT | The port of kernel control socket port, default:52321 |
 
 ## Commandline parameters
 
@@ -91,5 +99,3 @@ kernel-controller-deployment-564d76877-mqsm8   1/1     Running   0          16s
 
 - Currently, only the startup script of the python kernel has been modified. When `KERNEL_LANGUAGE=python`, the socket
   port passed into the kernel can be customized.
-- When the kernel is not in use, you need to shut down the kernel manually. You can stop it by sending a socket signal (
-  but this only stops the pod and does not delete the kernel resources), or directly delete the kernel resources.
