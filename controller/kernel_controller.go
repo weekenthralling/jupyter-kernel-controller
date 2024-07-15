@@ -31,6 +31,8 @@ const (
 	KERNEL_ID_ANNO_NAME         = "jupyter.org/kernel-id"
 	KERNEL_CONNECTION_ANNO_NAME = "jupyter.org/kernel-connection-info"
 	KERNEL_NAME_LABEL_NAME      = "jupyter.org/kernel-name"
+	KERNEL_UPDATED_LABEL_NAME   = "jupyter-kernel-controller/updated"
+	KERNEL_UPDATED_LABEL_VALUE  = "True"
 )
 
 /*
@@ -182,6 +184,13 @@ func (r *KernelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 // updateKernelResource set kernel startup env and connection annotation
 func (r *KernelReconciler) updateKernelResource(instance *v1beta1.Kernel) error {
+
+	// If kernel updated by controller, skip
+	if instance.Labels != nil &&
+		instance.Labels[KERNEL_UPDATED_LABEL_NAME] == KERNEL_UPDATED_LABEL_VALUE {
+		return nil
+	}
+
 	ctx := context.Background()
 
 	// Define kernel ports to check and their corresponding values from the config
@@ -217,14 +226,27 @@ func (r *KernelReconciler) updateKernelResource(instance *v1beta1.Kernel) error 
 	}
 
 	// Set kernel connection info annotation
-	annotation, _ := r.createKernelAnnotation(kernelEnv, instance.Name, instance.Namespace)
-	for k, v := range annotation {
-		instance.Annotations[k] = v
+	annotations, _ := r.createKernelAnnotation(kernelEnv, instance.Name, instance.Namespace)
+	if instance.Annotations == nil {
+		instance.Annotations = annotations
+	} else {
+		for k, v := range annotations {
+			instance.Annotations[k] = v
+		}
+	}
+
+	// Set kernel labels 'jupyter-kernel-controller/updated=True'
+	if instance.Labels == nil {
+		instance.Labels = map[string]string{
+			KERNEL_UPDATED_LABEL_NAME: KERNEL_UPDATED_LABEL_VALUE,
+		}
+	} else {
+		instance.Labels[KERNEL_UPDATED_LABEL_NAME] = KERNEL_UPDATED_LABEL_VALUE
 	}
 
 	// Update kernel resource with new env and annotation
 	if err := r.Update(ctx, instance); err != nil {
-		r.Log.Error(err, "Failed add kernel connection info to kernel labels")
+		r.Log.Error(err, "Failed update kernel resource")
 		return err
 	}
 
@@ -280,21 +302,21 @@ func (r *KernelReconciler) generatePodResource(instance *v1beta1.Kernel) *corev1
 		Spec: *instance.Spec.Template.Spec.DeepCopy(),
 	}
 
-	// copy all the kernel labels to the pod including poddefault related labels
+	// Copy all the kernel labels to the pod including poddefault related labels
 	l := &pod.ObjectMeta.Labels
-	for k, v := range instance.ObjectMeta.Labels {
+	for k, v := range instance.Labels {
 		(*l)[k] = v
 	}
 
-	// copy all the kernel annotations to the pod.
+	// Copy all the kernel annotations to the pod.
 	a := &pod.ObjectMeta.Annotations
-	for k, v := range instance.ObjectMeta.Annotations {
+	for k, v := range instance.Annotations {
 		if !strings.Contains(k, "kubectl") && !strings.Contains(k, "kernel") {
 			(*a)[k] = v
 		}
 	}
 
-	// set kernel container name
+	// Set kernel container name
 	pod.Spec.Containers[0].Name = instance.Name
 	return pod
 }
