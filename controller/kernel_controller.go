@@ -173,7 +173,7 @@ func (r *KernelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// Update kernel status with pod conditions
-	if err := updateKernelStatus(r, instance, foundPod, req); err != nil {
+	if err := r.updateKernelStatus(instance, foundPod, req); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -337,12 +337,12 @@ func (r *KernelReconciler) generateService(instance *v1beta1.Kernel, pod *corev1
 	return svc
 }
 
-func updateKernelStatus(r *KernelReconciler, kernel *v1beta1.Kernel, pod *corev1.Pod, req ctrl.Request) error {
+func (r *KernelReconciler) updateKernelStatus(kernel *v1beta1.Kernel, pod *corev1.Pod, req ctrl.Request) error {
 
 	log := r.Log.WithValues("Kernel", req.NamespacedName)
 	ctx := context.Background()
 
-	status, err := createKernelStatus(r, kernel, pod, req)
+	status, err := r.createKernelStatus(kernel, pod, req)
 	if err != nil {
 		return err
 	}
@@ -352,7 +352,7 @@ func updateKernelStatus(r *KernelReconciler, kernel *v1beta1.Kernel, pod *corev1
 	return r.Status().Update(ctx, kernel)
 }
 
-func createKernelStatus(r *KernelReconciler, kernel *v1beta1.Kernel, pod *corev1.Pod, req ctrl.Request) (v1beta1.KernelStatus, error) {
+func (r *KernelReconciler) createKernelStatus(kernel *v1beta1.Kernel, pod *corev1.Pod, req ctrl.Request) (v1beta1.KernelStatus, error) {
 
 	log := r.Log.WithValues("Kernel", req.NamespacedName)
 
