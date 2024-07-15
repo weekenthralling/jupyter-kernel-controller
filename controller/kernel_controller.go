@@ -197,7 +197,7 @@ func (r *KernelReconciler) updateKernelResource(instance *v1beta1.Kernel) error 
 	cfg := r.Config
 	kernelStartupEnv := map[string]string{
 		"KERNEL_ID":           uuid.New().String(),
-		"KERNEL_SHELL_PORT":   strconv.Itoa(cfg.KernelControlPort),
+		"KERNEL_SHELL_PORT":   strconv.Itoa(cfg.KernelShellPort),
 		"KERNEL_IOPUB_PORT":   strconv.Itoa(cfg.KernelIOPubPort),
 		"KERNEL_STDIN_PORT":   strconv.Itoa(cfg.KernelStdinPort),
 		"KERNEL_HB_PORT":      strconv.Itoa(cfg.KernelHBPort),
