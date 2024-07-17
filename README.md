@@ -99,3 +99,7 @@ kernel-controller-deployment-564d76877-mqsm8   1/1     Running   0          16s
 
 - Currently, only the startup script of the python kernel has been modified. When `KERNEL_LANGUAGE=python`, the socket
   port passed into the kernel can be customized.
+
+## License
+
+`Jupyter-Kernel-Controller` is distributed under the terms of the [Apache 2.0](https://spdx.org/licenses/Apache-2.0.html) license.
