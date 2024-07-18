@@ -10,9 +10,8 @@ import signal
 import socket
 import tempfile
 import time
-import uuid
 from multiprocessing import Process
-from threading import Thread, Timer
+from threading import Thread
 
 from Cryptodome.Cipher import AES, PKCS1_v1_5
 from Cryptodome.PublicKey import RSA
@@ -483,17 +482,23 @@ def start_ipython(
     # Capture the kernel class before removing 'import_item' from the namespace
     kernel_class = import_item(kernel_class_name)
 
+    if kernel_idle_timeout := kwargs["kernel_idle_timeout"]:
+        # create thread tasks before namespace update
+        Thread(target=check_idle, args=(kernel_idle_timeout,)).start()
+        Thread(target=monitor_activity, args=(kwargs["connection_file"],)).start()
+
     # create an initial list of variables to clear
     # we do this without deleting to preserve the locals so that
     # initialize_namespace isn't affected by this mutation
-    to_delete = [k for k in namespace if not k.startswith("__")]
+    # to_delete = [k for k in namespace if not k.startswith("__")]
 
+    namespace = dict((k, v) for k, v in namespace.items() if k.startswith("__"))
     # initialize the namespace with the proper variables
     initialize_namespace(namespace, cluster_type=cluster_type)
 
     # delete the extraneous variables
-    for k in to_delete:
-        del namespace[k]
+    # for k in to_delete:
+    #     del namespace[k]
 
     # Start the kernel.
     app = IPKernelApp.instance(kernel_class=kernel_class, user_ns=namespace, **kwargs)
@@ -512,28 +517,30 @@ def start_ipython(
         )
 
 
-def start_idle_timer(kernel_idle_timeout):
-    interval = 60
-    idle_timer = Timer(
-        interval,
-        check_idle,
-        args=(kernel_idle_timeout,),
-    )
-    idle_timer.start()
-
-
 def check_idle(kernel_idle_timeout):
-    current_time = time.time()
-    # Check if the idle timeout has been exceeded
-    if current_time - last_activity_time > kernel_idle_timeout:
-        logger.info("Kernel is idle, shutting down...")
-        os.kill(os.getpid(), signal.SIGTERM)
-    else:
-        # Recreate the timer for the next check
-        start_idle_timer(kernel_idle_timeout)
+    """Shutting down kernel if idle for a long time
+
+    Args:
+        kernel_idle_timeout (_type_): kernel idle time threshold
+    """
+    global last_activity_time
+    while True:
+        current_time = time.time()
+        # Check if the idle timeout has been exceeded
+        if current_time - last_activity_time > kernel_idle_timeout:
+            print(
+                f"Kernel is idle for {current_time - last_activity_time}s, shutting down..."
+            )
+            os.kill(os.getpid(), signal.SIGTERM)
+        time.sleep(60)
 
 
 def monitor_activity(conn_file):
+    """Monitor kernel and update kernel `last_activity_time`
+
+    Args:
+        conn_file (_type_): kernel connection file
+    """
     from jupyter_client.blocking import BlockingKernelClient
 
     client = BlockingKernelClient()
@@ -546,11 +553,11 @@ def monitor_activity(conn_file):
             msg = client.get_iopub_msg(timeout=1)
             if msg and msg["header"]["msg_type"] == "status":
                 execution_state = msg["content"]["execution_state"]
-                logger.info(f"Kernel execution state: {execution_state}")
+                print(f"Kernel execution state: {execution_state}")
                 if execution_state == "busy":
                     # Update last activity time
                     last_activity_time = time.time()
-        except Exception:
+        except Exception as e:
             pass
 
 
@@ -775,21 +782,13 @@ if __name__ == "__main__":
     if cluster_type == "spark":
         signal.signal(signal.SIGUSR2, cancel_spark_jobs)
 
-    if kernel_idle_timeout:
-        start_idle_timer(kernel_idle_timeout)
-
-        activity_thread = Thread(
-            target=monitor_activity,
-            args=(connection_file,),
-        )
-        activity_thread.start()
-        activity_thread.join()
-
     # launch the IPython kernel instance
+    logger.info("launch the IPython kernel instance ...")
     start_ipython(
         locals(),
         cluster_type=cluster_type,
         connection_file=connection_file,
         ip=ip,
         kernel_class_name=kernel_class_name,
+        kernel_idle_timeout=kernel_idle_timeout,
     )
