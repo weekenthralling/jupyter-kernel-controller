@@ -57,6 +57,19 @@ type KernelReconciler struct {
 	EventRecorder record.EventRecorder
 }
 
+type KernelConnectionInfo struct {
+	ShellPort       uint64 `json:"shell_port"`
+	StdinPort       uint64 `json:"stdin_port"`
+	IOPubPort       uint64 `json:"iopub_port"`
+	ControlPort     uint64 `json:"control_port"`
+	HBPort          uint64 `json:"hb_port"`
+	IP              string `json:"ip"`
+	Key             string `json:"key"`
+	Transport       string `json:"transport"`
+	SignatureScheme string `json:"signature_scheme"`
+	KernelName      string `json:"kernel_name"`
+}
+
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
 // +kubebuilder:rbac:groups=core,resources=services,verbs="*"
 // +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;patch
@@ -265,17 +278,21 @@ func (r *KernelReconciler) createKernelAnnotation(kernelEnv *[]corev1.EnvVar, na
 	kernelAnnotations[KERNEL_ID_ANNO_NAME] = currentKernelEnv["KERNEL_ID"]
 
 	// Set connection annotation
-	kernelConnectionInfo := map[string]string{
-		"shell_port":       currentKernelEnv["KERNEL_SHELL_PORT"],
-		"iopub_port":       currentKernelEnv["KERNEL_IOPUB_PORT"],
-		"stdin_port":       currentKernelEnv["KERNEL_STDIN_PORT"],
-		"control_port":     currentKernelEnv["KERNEL_CONTROL_PORT"],
-		"hb_port":          currentKernelEnv["KERNEL_HB_PORT"],
-		"ip":               fmt.Sprintf("%s.%s.svc.cluster.local", name, namespace),
-		"key":              currentKernelEnv["KERNEL_ID"],
-		"transport":        "tcp",
-		"signature_scheme": "hmac-sha256",
-		"kernel_name":      "",
+	formatEnvPort := func(envName string) uint64 {
+		port, _ := strconv.ParseUint(currentKernelEnv[envName], 10, 64)
+		return port
+	}
+	kernelConnectionInfo := KernelConnectionInfo{
+		ShellPort:       formatEnvPort("KERNEL_SHELL_PORT"),
+		IOPubPort:       formatEnvPort("KERNEL_IOPUB_PORT"),
+		StdinPort:       formatEnvPort("KERNEL_STDIN_PORT"),
+		ControlPort:     formatEnvPort("KERNEL_CONTROL_PORT"),
+		HBPort:          formatEnvPort("KERNEL_HB_PORT"),
+		IP:              fmt.Sprintf("%s.%s.svc.cluster.local", name, namespace),
+		Key:             currentKernelEnv["KERNEL_ID"],
+		Transport:       "tcp",
+		SignatureScheme: "hmac-sha256",
+		KernelName:      "",
 	}
 
 	connectionAnnotation, err := json.Marshal(kernelConnectionInfo)
