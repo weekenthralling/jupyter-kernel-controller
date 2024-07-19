@@ -6,6 +6,12 @@ It has been developed using Golang and [Kubebuilder](https://book.kubebuilder.io
 
 ## Spec
 
+First, create configMap from kernel launch file
+
+```sh
+kubectl -n <your-namespace> create configmap kernel-launch-scripts --from-file=kernel_launch/bootstrap-kernel.sh --from-file=kernel_launch/launch_ipykernel.py
+```
+
 The user needs to specify the PodSpec for the Jupyter kernel. For example:
 
 ```yaml
