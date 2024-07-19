@@ -9,30 +9,35 @@ It has been developed using Golang and [Kubebuilder](https://book.kubebuilder.io
 The user needs to specify the PodSpec for the Jupyter kernel. For example:
 
 ```yaml
-apiVersion: jupyter.org/v1beta1
+apiVersion: jupyter.org/v1
 kind: Kernel
 metadata:
-  name: my-kernel
+  name: foo
+  namespace: default
 spec:
   template:
     spec:
       containers:
-      - env:
-        - name: KERNEL_ID
-          value: 7d25af7c-e687-46f6-98c3-0e7a0ce3a001
-        - name: KERNEL_USERNAME
-          value: jovyan
-        - name: KERNEL_LANGUAGE
-          value: python
-        - name: JPY_PARENT_PID
-          value: "7"
-        - name: LC_CTYPE
-          value: C.UTF-8
-        - name: KERNEL_IDLE_TIMEOUT
-          value: "60"
-        image: weekenthralling/kernel-py:133fbe3
-        name: kernel
+        - env:
+          - name: KERNEL_IDLE_TIMEOUT
+            value: "1800"
+          - name: KERNEL_ID
+            value: 4cea8598-de71-43f7-bbff-0f60c6484595
+          image: elyra/kernel-py:3.2.3
+          name: main
+          volumeMounts:
+            - mountPath: /usr/local/bin/bootstrap-kernel.sh
+              name: kernel-launch-vol
+              subPath: bootstrap-kernel.sh
+            - mountPath: /usr/local/bin/kernel-launchers/python/scripts/launch_ipykernel.py
+              name: kernel-launch-vol
+              subPath: launch_ipykernel.py
       restartPolicy: Never
+      volumes:
+        - configMap:
+            defaultMode: 493
+            name: kernel-launch-scripts
+          name: kernel-launch-vol
 ```
 
 The required fields are `containers[0].image` and (`containers[0].command` and/or `containers[0].args`). That is, the
