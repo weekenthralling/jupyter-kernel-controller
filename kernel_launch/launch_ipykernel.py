@@ -528,9 +528,6 @@ def check_idle(kernel_idle_timeout):
         current_time = time.time()
         # Check if the idle timeout has been exceeded
         if current_time - last_activity_time > kernel_idle_timeout:
-            print(
-                f"Kernel is idle for {current_time - last_activity_time}s, shutting down..."
-            )
             os.kill(os.getpid(), signal.SIGTERM)
         time.sleep(60)
 
@@ -553,7 +550,6 @@ def monitor_activity(conn_file):
             msg = client.get_iopub_msg(timeout=1)
             if msg and msg["header"]["msg_type"] == "status":
                 execution_state = msg["content"]["execution_state"]
-                print(f"Kernel execution state: {execution_state}")
                 if execution_state == "busy":
                     # Update last activity time
                     last_activity_time = time.time()
