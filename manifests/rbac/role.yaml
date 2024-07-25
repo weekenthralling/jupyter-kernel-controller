@@ -33,9 +33,3 @@ rules:
       - kernels/status
     verbs:
       - '*'
-  - apiGroups:
-      - networking.istio.io
-    resources:
-      - virtualservices
-    verbs:
-      - '*'
