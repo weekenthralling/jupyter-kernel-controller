@@ -24,36 +24,36 @@ func NewMetrics(cli client.Client) *Metrics {
 		cli: cli,
 		runningKernels: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "Kernel_running",
-				Help: "Current running Kernels in the cluster",
+				Name: "kernel_running",
+				Help: "Current running kernels in the cluster",
 			},
 			[]string{"namespace"},
 		),
 		KernelCreation: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "Kernel_create_total",
-				Help: "Total times of creating Kernels",
+				Name: "kernel_create_total",
+				Help: "Total times of creating kernels",
 			},
 			[]string{"namespace"},
 		),
 		KernelFailCreation: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "Kernel_create_failed_total",
-				Help: "Total failure times of creating Kernels",
+				Name: "kernel_create_failed_total",
+				Help: "Total failure times of creating kernels",
 			},
 			[]string{"namespace"},
 		),
 		KernelCullingCount: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "Kernel_culling_total",
-				Help: "Total times of culling Kernels",
+				Name: "kernel_culling_total",
+				Help: "Total times of culling kernels",
 			},
 			[]string{"namespace", "name"},
 		),
 		KernelCullingTimestamp: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "last_Kernel_culling_timestamp_seconds",
-				Help: "Timestamp of the last Kernel culling in seconds",
+				Name: "last_kernel_culling_timestamp_seconds",
+				Help: "Timestamp of the last kernel culling in seconds",
 			},
 			[]string{"namespace", "name"},
 		),
