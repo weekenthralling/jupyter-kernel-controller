@@ -20,7 +20,9 @@ import (
 	"flag"
 	"os"
 
-	"github.com/jupyter_kernel_controller/api/v1beta1"
+	krlv1 "github.com/jupyter_kernel_controller/api/v1"
+	krlv1alpha1 "github.com/jupyter_kernel_controller/api/v1alpha1"
+	krlv1beta1 "github.com/jupyter_kernel_controller/api/v1beta1"
 	"github.com/jupyter_kernel_controller/config"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -40,7 +42,9 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(v1beta1.AddToScheme(scheme))
+	utilruntime.Must(krlv1.AddToScheme(scheme))
+	utilruntime.Must(krlv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(krlv1beta1.AddToScheme(scheme))
 }
 
 func main() {
