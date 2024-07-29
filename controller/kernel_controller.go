@@ -151,6 +151,9 @@ func (r *KernelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			log.Error(err, "culling idle kernel error")
 			return ctrl.Result{}, err
 		}
+		t := time.Now()
+		r.Metrics.KernelCullingCount.WithLabelValues(foundPod.Namespace, foundPod.Name).Inc()
+		r.Metrics.KernelCullingTimestamp.WithLabelValues(foundPod.Namespace, foundPod.Name).Set(float64(t.Unix()))
 		return ctrl.Result{}, nil
 	}
 
