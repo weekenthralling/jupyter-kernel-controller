@@ -20,6 +20,9 @@ spec:
     - jsonPath: .status.conditions[?(@.type=='Ready')].reason
       name: Reason
       type: string
+    - name: Age
+      type: date
+      jsonPath: .status.containerState.running.startedAt
     schema:
       openAPIV3Schema:
         properties:
@@ -3156,6 +3159,9 @@ spec:
     - jsonPath: .status.conditions[?(@.type=='Ready')].reason
       name: Reason
       type: string
+    - name: Age
+      type: date
+      jsonPath: .status.containerState.running.startedAt
     schema:
       openAPIV3Schema:
         properties:
@@ -6292,6 +6298,9 @@ spec:
     - jsonPath: .status.conditions[?(@.type=='Ready')].reason
       name: Reason
       type: string
+    - name: Age
+      type: date
+      jsonPath: .status.containerState.running.startedAt
     schema:
       openAPIV3Schema:
         properties:
