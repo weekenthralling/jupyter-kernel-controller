@@ -110,9 +110,11 @@ func (r *KernelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// If not found, continue. Is not an event.
 	instance := &v1beta1.Kernel{}
-	if err := r.Get(ctx, req.NamespacedName, instance); ignoreNotFound(err) != nil {
-		log.Error(err, "unable to fetch Kernel")
-		return ctrl.Result{}, err
+	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
+		if ignoreNotFound(err) != nil {
+			log.Error(err, "unable to fetch Kernel")
+		}
+		return ctrl.Result{}, ignoreNotFound(err)
 	}
 
 	// Set annotations from kernel resource env
