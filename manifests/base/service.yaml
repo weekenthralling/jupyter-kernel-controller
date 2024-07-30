@@ -4,7 +4,7 @@ metadata:
   labels:
     app: kernel-controller
     kustomize.component: kernel-controller
-  name: service
+  name: jupyter-kernel-service
 spec:
   ports:
     - port: 443

@@ -5,3 +5,5 @@ resources:
   - role.yaml
   - rolebinding.yaml
   - user_cluster_roles.yaml
+  - leader_election_role_binding.yaml
+  - leader-election-role.yaml
