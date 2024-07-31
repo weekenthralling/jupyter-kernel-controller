@@ -122,8 +122,9 @@ func (r *KernelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	if r.EtcdClient != nil {
-		kernelLockKey := instance.Namespace + "/" + instance.Name
+		r.Log.Info("Try to lock the kernel enent", "namespace", instance.Namespace, "name", instance.Name)
 
+		kernelLockKey := instance.Namespace + "/" + instance.Name
 		session, err := concurrency.NewSession(r.EtcdClient)
 		if err != nil {
 			log.Error(err, "unable create etcd distributed lock session")
@@ -132,12 +133,12 @@ func (r *KernelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		defer session.Close()
 
 		mutex := concurrency.NewMutex(session, kernelLockKey)
-
 		if err := mutex.Lock(context.Background()); err != nil {
 			log.Error(err, fmt.Sprintf("unable lock %s", kernelLockKey))
 			return ctrl.Result{}, err
 		}
 
+		r.Log.Info("Locked the kernel event", "namespace", instance.Namespace, "name", instance.Name)
 		defer func() {
 			if err := mutex.Unlock(context.Background()); err != nil {
 				log.Error(err, fmt.Sprintf("unable unlock %s", kernelLockKey))

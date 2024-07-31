@@ -125,6 +125,7 @@ func main() {
 	// `enableLeaderElection` and `enableMultiReplica` cannot be enabled at the same time.
 	// Prioritize enabling `enableLeaderElection`.
 	if !enableLeaderElection && enableMultiReplica {
+		setupLog.Info("Start manager using multi-replica ...")
 		// Get etcd endpoints from cofig
 		etcdEndpoints := strings.Split(etcdEndpoints, ",")
 
