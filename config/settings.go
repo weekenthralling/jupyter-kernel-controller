@@ -11,6 +11,11 @@ type Config struct {
 	KernelStdinPort   int `mapstructure:"kernel_stdin_port"`
 	KernelHBPort      int `mapstructure:"kernel_hb_port"`
 	KernelControlPort int `mapstructure:"kernel_control_port"`
+
+	// // Use the distributed lock provided by etcd to prevent multiple replicas
+	// // 	from handling the same kernel event simultaneously in a multi-replica deployment.
+	// EnableMultiReplica bool   `mapstructure:"enable_multi_replica"`
+	// EtcdEndpoints      string `mapstructure:"etcd_endpoints"`
 }
 
 func LoadConfig() *Config {

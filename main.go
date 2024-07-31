@@ -19,11 +19,14 @@ package main
 import (
 	"flag"
 	"os"
+	"strings"
+	"time"
 
 	krlv1 "github.com/jupyter_kernel_controller/api/v1"
 	krlv1alpha1 "github.com/jupyter_kernel_controller/api/v1alpha1"
 	krlv1beta1 "github.com/jupyter_kernel_controller/api/v1beta1"
 	"github.com/jupyter_kernel_controller/config"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -48,21 +51,32 @@ func init() {
 }
 
 func main() {
-	var metricsAddr, leaderElectionNamespace string
+	var metricsAddr, probeAddr string
+
+	var leaderElectionNamespace string
 	var enableLeaderElection bool
-	var probeAddr string
+
+	var enableMultiReplica bool
+	var etcdEndpoints string
 
 	var Burst int
 	var QPS int
 
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "probe-addr", ":8081", "The address the health endpoint binds to.")
+
 	flag.StringVar(&leaderElectionNamespace, "leader-election-namespace", "",
 		"Determines the namespace in which the leader election configmap will be created.")
-
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+
+	flag.StringVar(&etcdEndpoints, "etcd-endpoints", "",
+		"Specify the etcd endpoint to be used as the distributed lock.")
+	flag.BoolVar(&enableMultiReplica, "enable-multi-replica", false,
+		"Enable Multi-Replica for controller manager. "+
+			"Enabling this will ensure there is only one replica handles the event at a time.")
+
 	flag.IntVar(&Burst, "burst", 0, "If it's zero, the created RESTClient will use DefaultBurst")
 	flag.IntVar(&QPS, "qps", 0, "If it's zero, the created RESTClient will use DefaultQPS")
 	opts := zap.Options{
@@ -96,14 +110,39 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controller.KernelReconciler{
+	// Load controller startup config from env
+	controllerConfig := config.LoadConfig()
+
+	kr := &controller.KernelReconciler{
 		Client:        mgr.GetClient(),
-		Config:        config.LoadConfig(),
+		Config:        controllerConfig,
 		Log:           ctrl.Log.WithName("controllers").WithName("Kernel"),
 		Scheme:        mgr.GetScheme(),
 		Metrics:       controller.NewMetrics(mgr.GetClient()),
 		EventRecorder: mgr.GetEventRecorderFor("kernel-controller"),
-	}).SetupWithManager(mgr); err != nil {
+	}
+
+	// `enableLeaderElection` and `enableMultiReplica` cannot be enabled at the same time.
+	// Prioritize enabling `enableLeaderElection`.
+	if !enableLeaderElection && enableMultiReplica {
+		// Get etcd endpoints from cofig
+		etcdEndpoints := strings.Split(etcdEndpoints, ",")
+
+		cli, err := clientv3.New(clientv3.Config{
+			Endpoints:   etcdEndpoints,
+			DialTimeout: 5 * time.Second,
+		})
+
+		if err != nil {
+			setupLog.Error(err, "unable use etcd distributed lock")
+			os.Exit(1)
+		}
+		defer cli.Close()
+
+		kr.EtcdClient = cli
+	}
+
+	if err = kr.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kernel")
 		os.Exit(1)
 	}

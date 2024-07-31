@@ -18,6 +18,9 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/jupyter_kernel_controller/config"
+	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/client/v3/concurrency"
+
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,6 +54,7 @@ func ignoreNotFound(err error) error {
 type KernelReconciler struct {
 	client.Client
 	Config        *config.Config
+	EtcdClient    *clientv3.Client
 	Log           logr.Logger
 	Scheme        *runtime.Scheme
 	Metrics       *Metrics
@@ -115,6 +119,30 @@ func (r *KernelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			log.Error(err, "unable to fetch Kernel")
 		}
 		return ctrl.Result{}, ignoreNotFound(err)
+	}
+
+	if r.EtcdClient != nil {
+		kernelLockKey := instance.Namespace + "/" + instance.Name
+
+		session, err := concurrency.NewSession(r.EtcdClient)
+		if err != nil {
+			log.Error(err, "unable create etcd distributed lock session")
+			return ctrl.Result{}, err
+		}
+		defer session.Close()
+
+		mutex := concurrency.NewMutex(session, kernelLockKey)
+
+		if err := mutex.Lock(context.Background()); err != nil {
+			log.Error(err, fmt.Sprintf("unable lock %s", kernelLockKey))
+			return ctrl.Result{}, err
+		}
+
+		defer func() {
+			if err := mutex.Unlock(context.Background()); err != nil {
+				log.Error(err, fmt.Sprintf("unable unlock %s", kernelLockKey))
+			}
+		}()
 	}
 
 	// Set annotations from kernel resource env
@@ -526,28 +554,4 @@ func (r *KernelReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&v1beta1.Kernel{}).
 		Owns(&corev1.Pod{}).
 		Complete(r)
-}
-
-func CopyPodFields(from, to *corev1.Pod) bool {
-	requireUpdate := false
-	for k, v := range to.Labels {
-		if from.Labels[k] != v {
-			requireUpdate = true
-		}
-	}
-	to.Labels = from.Labels
-
-	for k, v := range to.Annotations {
-		if from.Annotations[k] != v {
-			requireUpdate = true
-		}
-	}
-	to.Annotations = from.Annotations
-
-	if !reflect.DeepEqual(to.Spec, from.Spec) {
-		requireUpdate = true
-	}
-	to.Spec = from.Spec
-
-	return requireUpdate
 }
