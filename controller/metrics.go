@@ -84,6 +84,10 @@ func (m *Metrics) Collect(ch chan<- prometheus.Metric) {
 
 // scrape gets current running Kernel pods.
 func (m *Metrics) scrape() {
+
+	// Reset the current metrics to clear previous data
+	m.runningKernels.Reset()
+
 	podList := &corev1.PodList{}
 	err := m.cli.List(context.TODO(), podList)
 	if err != nil {
