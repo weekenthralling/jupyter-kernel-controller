@@ -1,0 +1,12 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: jupyter-kernel-controller
+spec:
+  jobLabel: kernel-metrics
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: jupyter-kernel-controller
+  endpoints:
+    - port: metrics
+      path: /metrics
