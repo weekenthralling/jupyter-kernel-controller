@@ -17,6 +17,7 @@ resources:
   - deployment.yaml
   - service.yaml
   - serviceaccount.yaml
+  - servicemonitor.yaml
 
 images:
   - name: weekenthralling/jupyter-kernel-controller

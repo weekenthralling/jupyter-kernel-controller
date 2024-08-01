@@ -7,7 +7,8 @@ metadata:
   name: jupyter-kernel-service
 spec:
   ports:
-    - port: 443
+    - name: metrics
+      port: 8080
   selector:
     app: kernel-controller
     kustomize.component: kernel-controller
