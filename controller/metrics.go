@@ -68,6 +68,8 @@ func (m *Metrics) Describe(ch chan<- *prometheus.Desc) {
 	m.runningKernels.Describe(ch)
 	m.KernelCreation.Describe(ch)
 	m.KernelFailCreation.Describe(ch)
+	m.KernelCullingCount.Describe(ch)
+	m.KernelCullingTimestamp.Describe(ch)
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -76,6 +78,8 @@ func (m *Metrics) Collect(ch chan<- prometheus.Metric) {
 	m.runningKernels.Collect(ch)
 	m.KernelCreation.Collect(ch)
 	m.KernelFailCreation.Collect(ch)
+	m.KernelCullingCount.Collect(ch)
+	m.KernelCullingTimestamp.Collect(ch)
 }
 
 // scrape gets current running Kernel pods.
@@ -87,7 +91,7 @@ func (m *Metrics) scrape() {
 	}
 	podCache := make(map[string]float64)
 	for _, v := range podList.Items {
-		name, ok := v.ObjectMeta.GetLabels()["Kernel-name"]
+		name, ok := v.ObjectMeta.GetLabels()[KERNEL_NAME_LABEL_NAME]
 		if ok && name == v.Name {
 			podCache[v.Namespace] += 1
 		}
