@@ -29,4 +29,6 @@ Official document at `~/.ipython/profile_default/startup/README`:
 The current script references [Jupyter Kernel Image](https://github.com/jupyter-server/enterprise_gateway/tree/main/etc/kernel-launchers) and has made the following modifications:
 
 - The kernel can be started using a user-specified port.
-- The public key is set as an optional parameter; however, it is required when the response address is provided.
+- The `PUBLIC_KEY` is set as an optional parameter; however, it is required when the response address is provided.
+- Use the `KERNEL_ID` from the environment variables as the key to connect to the kernel.
+- Add the `KERNEL_IDLE_TIMEOUT` environment variable. Once set, any kernel that remains idle for longer than this duration will be terminated.
