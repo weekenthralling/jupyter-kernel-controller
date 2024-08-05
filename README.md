@@ -46,8 +46,7 @@ spec:
           name: kernel-launch-vol
 ```
 
-The required fields are `containers[0].image` and (`containers[0].command` and/or `containers[0].args`). That is, the
-user should specify what and how to run.
+The required fields are `containers[0].image`. If you’re using a custom image, you might also need to specify `containers[0].command` and `containers[0].args`. That is, the user should specify what and how to run.
 
 All other fields will be filled in with default value if not specified.
 
