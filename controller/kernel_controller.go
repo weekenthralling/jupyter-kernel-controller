@@ -33,6 +33,8 @@ const (
 	KERNEL_NAME_LABEL_NAME      = "jupyter.org/kernel-name"
 	KERNEL_UPDATED_LABEL_NAME   = "jupyter-kernel-controller/updated"
 	KERNEL_UPDATED_LABEL_VALUE  = "True"
+
+	DEFAULT_RESTART_POLICY = "Never"
 )
 
 /*
@@ -260,6 +262,11 @@ func (r *KernelReconciler) updateKernelResource(instance *v1beta1.Kernel) error 
 		}
 	} else {
 		instance.Labels[KERNEL_UPDATED_LABEL_NAME] = KERNEL_UPDATED_LABEL_VALUE
+	}
+
+	// Set default restart policy
+	if len(instance.Spec.Template.Spec.RestartPolicy) <= 0 {
+		instance.Spec.Template.Spec.RestartPolicy = DEFAULT_RESTART_POLICY
 	}
 
 	// Update kernel resource with new env and annotation
