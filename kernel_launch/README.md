@@ -1,6 +1,6 @@
 # Jupyter kernel
 
-Docker image used to spawn code execution environments for the TableGPT project. It is based on the `elyra/kernel-py` image, with additional data-analyze packages and Chinese support installed.
+It is based on the `elyra/kernel-py` image and replaces the original startup scripts with `bootstrap-kernel.sh` and `launch_ipykernel.py` from the directory to achieve the [following functionality](#script-modifications).
 
 ## Startup Scripts
 
