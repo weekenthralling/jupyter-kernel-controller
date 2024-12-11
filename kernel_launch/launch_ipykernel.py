@@ -426,7 +426,7 @@ def import_item(name):
     Returns
     -------
     mod : module object
-      The module that was imported.
+       The module that was imported.
     """
 
     parts = name.rsplit(".", 1)
@@ -483,9 +483,7 @@ def start_ipython(
 
         os.remove(conn_file)
     except Exception as e:
-        print(
-            f"Could not delete connection file '{conn_file}' at exit due to error: {e}"
-        )
+        print(f"Could not delete connection file '{conn_file}' at exit due to error: {e}")
 
 
 def check_idle(kernel_idle_timeout):
@@ -580,9 +578,7 @@ if __name__ == "__main__":
     # This means that the default values for --spark-context-initialization-mode (none) and --cluster-type (spark)
     # will need to come from the mirrored args' default until deprecated items have been removed.
     parser.add_argument(
-        "connection_file",
-        nargs="?",
-        help="Connection file to write connection info (deprecated)",
+        "connection_file", nargs="?", help="Connection file to write connection info (deprecated)"
     )
     parser.add_argument(
         "--RemoteProcessProxy.response-address",
@@ -704,9 +700,7 @@ if __name__ == "__main__":
         cluster_type = "none"
 
     # If the connection file doesn't exist, then create it.
-    if (
-        connection_file and not os.path.isfile(connection_file)
-    ) or kernel_id is not None:
+    if (connection_file and not os.path.isfile(connection_file)) or kernel_id is not None:
         # use kernel_id as key
         key = kernel_id.encode()  # convert to bytes
         connection_file = determine_connection_file(connection_file, kernel_id)
@@ -728,12 +722,7 @@ if __name__ == "__main__":
                 msg = "Parameter '--public-key' must be provided!"
                 raise RuntimeError(msg)
             comm_socket = return_connection_info(
-                connection_file,
-                response_addr,
-                lower_port,
-                upper_port,
-                kernel_id,
-                public_key,
+                connection_file, response_addr, lower_port, upper_port, kernel_id, public_key
             )
             if comm_socket:  # socket in use, start server listener process
                 server_listener_process = Process(

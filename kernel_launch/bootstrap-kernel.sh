@@ -14,25 +14,25 @@ KERNEL_HB_PORT=${KERNEL_HB_PORT}
 KERNEL_CONTROL_PORT=${KERNEL_CONTROL_PORT}
 KERNEL_IDLE_TIMEOUT=${KERNEL_IDLE_TIMEOUT}
 
-echo $0 env: $(env)
+echo $0 env: `env`
 
 launch_python_kernel() {
-    # Launch the python kernel launcher - which embeds the IPython kernel and listens for interrupts
-    # and shutdown requests from Enterprise Gateway.
+  # Launch the python kernel launcher - which embeds the IPython kernel and listens for interrupts
+  # and shutdown requests from Enterprise Gateway.
 
-    export JPY_PARENT_PID=$$ # Force reset of parent pid since we're detached
+  export JPY_PARENT_PID=$$  # Force reset of parent pid since we're detached
 
-    if [ -z "${KERNEL_CLASS_NAME}" ]
-    then
-        kernel_class_option=""
-    else
-        kernel_class_option="--kernel-class-name ${KERNEL_CLASS_NAME}"
-    fi
+  if [ -z "${KERNEL_CLASS_NAME}" ]
+  then
+    kernel_class_option=""
+  else
+    kernel_class_option="--kernel-class-name ${KERNEL_CLASS_NAME}"
+  fi
 
-    set -x
-    python ${KERNEL_LAUNCHERS_DIR}/python/scripts/launch_ipykernel.py --kernel-id ${KERNEL_ID} \
-        --port-range ${PORT_RANGE} --response-address ${RESPONSE_ADDRESS} --public-key ${PUBLIC_KEY} \
-        --spark-context-initialization-mode ${KERNEL_SPARK_CONTEXT_INIT_MODE} \
+	set -x
+	python ${KERNEL_LAUNCHERS_DIR}/python/scripts/launch_ipykernel.py --kernel-id ${KERNEL_ID} \
+	    --port-range ${PORT_RANGE} --response-address ${RESPONSE_ADDRESS} --public-key ${PUBLIC_KEY} \
+	    --spark-context-initialization-mode ${KERNEL_SPARK_CONTEXT_INIT_MODE} \
         --kernel-shell-port ${KERNEL_SHELL_PORT} \
         --kernel-iopub-port ${KERNEL_IOPUB_PORT} \
         --kernel-stdin-port ${KERNEL_STDIN_PORT} \
@@ -40,16 +40,16 @@ launch_python_kernel() {
         --kernel-control-port ${KERNEL_CONTROL_PORT} \
         --kernel-idle-timeout ${KERNEL_IDLE_TIMEOUT} \
         ${kernel_class_option}
-    { set +x; } 2>/dev/null
+	{ set +x; } 2>/dev/null
 }
 
 launch_R_kernel() {
     # Launch the R kernel launcher - which embeds the IRkernel kernel and listens for interrupts
     # and shutdown requests from Enterprise Gateway.
 
-    set -x
-    Rscript ${KERNEL_LAUNCHERS_DIR}/R/scripts/launch_IRkernel.R --kernel-id ${KERNEL_ID} --port-range ${PORT_RANGE} --response-address ${RESPONSE_ADDRESS} --public-key ${PUBLIC_KEY} --spark-context-initialization-mode ${KERNEL_SPARK_CONTEXT_INIT_MODE}
-    { set +x; } 2>/dev/null
+	set -x
+	Rscript ${KERNEL_LAUNCHERS_DIR}/R/scripts/launch_IRkernel.R --kernel-id ${KERNEL_ID} --port-range ${PORT_RANGE} --response-address ${RESPONSE_ADDRESS} --public-key ${PUBLIC_KEY} --spark-context-initialization-mode ${KERNEL_SPARK_CONTEXT_INIT_MODE}
+	{ set +x; } 2>/dev/null
 }
 
 launch_scala_kernel() {
@@ -80,13 +80,13 @@ launch_scala_kernel() {
 
     set -x
     eval exec \
-        "${SPARK_HOME}/bin/spark-submit" \
-        "${SPARK_OPTS}" \
-        --jars "${JARS}" \
-        --class launcher.ToreeLauncher \
-        "${LAUNCHER_APP}" \
-        "${TOREE_OPTS}" \
-        "--kernel-id ${KERNEL_ID} --port-range ${PORT_RANGE} --response-address ${RESPONSE_ADDRESS} --public-key ${PUBLIC_KEY} --spark-context-initialization-mode ${KERNEL_SPARK_CONTEXT_INIT_MODE}"
+         "${SPARK_HOME}/bin/spark-submit" \
+         "${SPARK_OPTS}" \
+         --jars "${JARS}" \
+         --class launcher.ToreeLauncher \
+         "${LAUNCHER_APP}" \
+         "${TOREE_OPTS}" \
+         "--kernel-id ${KERNEL_ID} --port-range ${PORT_RANGE} --response-address ${RESPONSE_ADDRESS} --public-key ${PUBLIC_KEY} --spark-context-initialization-mode ${KERNEL_SPARK_CONTEXT_INIT_MODE}"
     { set +x; } 2>/dev/null
 }
 
@@ -114,7 +114,7 @@ elif [[ "${KERNEL_LANGUAGE,,}" == "r" ]]
 then
     launch_R_kernel
 else
-    echo "Unrecognized value for KERNEL_LANGUAGE: '${KERNEL_LANGUAGE}'!"
-    exit 1
+	echo "Unrecognized value for KERNEL_LANGUAGE: '${KERNEL_LANGUAGE}'!"
+	exit 1
 fi
 exit 0
