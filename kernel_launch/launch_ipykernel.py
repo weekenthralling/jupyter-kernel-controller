@@ -19,9 +19,7 @@ from Cryptodome.Random import get_random_bytes
 from Cryptodome.Util.Padding import pad
 from jupyter_client.connect import write_connection_file
 
-LAUNCHER_VERSION = (
-    1  # Indicate to server the version of this launcher (payloads may vary)
-)
+LAUNCHER_VERSION = 1  # Indicate to server the version of this launcher (payloads may vary)
 
 # Minimum port range size and max retries, let EG_ env values act as the default for b/c purposes
 min_port_range_size = int(
@@ -34,9 +32,7 @@ max_port_range_retries = int(
 log_level = os.getenv("LOG_LEVEL", os.getenv("EG_LOG_LEVEL", "10"))
 log_level = int(log_level) if log_level.isdigit() else log_level
 
-logging.basicConfig(
-    format="[%(levelname)1.1s %(asctime)s.%(msecs).03d %(name)s] %(message)s"
-)
+logging.basicConfig(format="[%(levelname)1.1s %(asctime)s.%(msecs).03d %(name)s] %(message)s")
 
 logger = logging.getLogger("launch_ipykernel")
 logger.setLevel(log_level)
@@ -109,9 +105,7 @@ def initialize_namespace(namespace, cluster_type="spark"):
         init_thread = ExceptionThread(target=initialize_spark_session)
         spark = WaitingForSparkSessionToBeInitialized("spark", init_thread, namespace)
         sc = WaitingForSparkSessionToBeInitialized("sc", init_thread, namespace)
-        sqlContext = WaitingForSparkSessionToBeInitialized(
-            "sqlContext", init_thread, namespace
-        )
+        sqlContext = WaitingForSparkSessionToBeInitialized("sqlContext", init_thread, namespace)
 
         def sql(query):
             """Placeholder function. When called will wait for Spark session to be
@@ -119,13 +113,7 @@ def initialize_namespace(namespace, cluster_type="spark"):
             return spark.sql(query)
 
         namespace.update(
-            {
-                "spark": spark,
-                "sc": sc,
-                "sql": sql,
-                "sqlContext": sqlContext,
-                "sqlCtx": sqlContext,
-            }
+            {"spark": spark, "sc": sc, "sql": sql, "sqlContext": sqlContext, "sqlCtx": sqlContext}
         )
 
         init_thread.start()
@@ -147,12 +135,8 @@ class WaitingForSparkSessionToBeInitialized:
 
     # private and public attributes that show up for tab completion,
     # to indicate pending initialization of Spark session
-    _WAITING_FOR_SPARK_SESSION_TO_BE_INITIALIZED = (
-        "Spark Session not yet initialized ..."
-    )
-    WAITING_FOR_SPARK_SESSION_TO_BE_INITIALIZED = (
-        "Spark Session not yet initialized ..."
-    )
+    _WAITING_FOR_SPARK_SESSION_TO_BE_INITIALIZED = "Spark Session not yet initialized ..."
+    WAITING_FOR_SPARK_SESSION_TO_BE_INITIALIZED = "Spark Session not yet initialized ..."
 
     # the same wrapper class is used for all Spark session variables, so we need to record the name of the variable
     def __init__(self, global_variable_name, init_thread, namespace):
@@ -167,11 +151,7 @@ class WaitingForSparkSessionToBeInitialized:
     def __getattr__(self, name):
         """Handle attribute getter."""
         # ignore tab-completion request for __members__ or __methods__ and ignore meta property requests
-        if (
-            name.startswith("__")
-            or name.startswith("_ipython_")
-            or name.startswith("_repr_")
-        ):
+        if name.startswith("__") or name.startswith("_ipython_") or name.startswith("_repr_"):
             return
         else:
             # wait on thread to initialize the Spark session variables in global variable scope
@@ -203,14 +183,10 @@ def _validate_port_range(port_range):
             )
             raise RuntimeError(msg) from None
     except ValueError as ve:
-        msg = (
-            f"Port range validation failed for range: '{port_range}'.  Error was: {ve}"
-        )
+        msg = f"Port range validation failed for range: '{port_range}'.  Error was: {ve}"
         raise RuntimeError(msg) from None
     except IndexError as ie:
-        msg = (
-            f"Port range validation failed for range: '{port_range}'.  Error was: {ie}"
-        )
+        msg = f"Port range validation failed for range: '{port_range}'.  Error was: {ie}"
         raise RuntimeError(msg) from None
 
     return lower_port, upper_port
@@ -427,9 +403,7 @@ def server_listener(sock, parent_pid, cluster_type):
     while not shutdown:
         request = get_server_request(sock)
         if request:
-            signum = (
-                -1
-            )  # prevent logging poll requests since that occurs every 3 seconds
+            signum = -1  # prevent logging poll requests since that occurs every 3 seconds
             if request.get("signum") is not None:
                 signum = int(request.get("signum"))
                 os.kill(parent_pid, signum)
@@ -471,10 +445,7 @@ def import_item(name):
 
 
 def start_ipython(
-    namespace,
-    cluster_type="spark",
-    kernel_class_name=DEFAULT_KERNEL_CLASS_NAME,
-    **kwargs,
+    namespace, cluster_type="spark", kernel_class_name=DEFAULT_KERNEL_CLASS_NAME, **kwargs
 ):
     """Start the ipython kernel."""
     from ipykernel.kernelapp import IPKernelApp

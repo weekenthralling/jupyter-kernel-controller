@@ -22,7 +22,8 @@ launch_python_kernel() {
 
     export JPY_PARENT_PID=$$ # Force reset of parent pid since we're detached
 
-    if [ -z "${KERNEL_CLASS_NAME}" ]; then
+    if [ -z "${KERNEL_CLASS_NAME}" ]
+    then
         kernel_class_option=""
     else
         kernel_class_option="--kernel-class-name ${KERNEL_CLASS_NAME}"
@@ -57,10 +58,7 @@ launch_scala_kernel() {
     # spark-submit, so additional setup is required.
 
     PROG_HOME=${KERNEL_LAUNCHERS_DIR}/scala
-    KERNEL_ASSEMBLY=$( (
-        cd "${PROG_HOME}/lib"
-        ls -1 toree-assembly-*.jar
-    ))
+    KERNEL_ASSEMBLY=`(cd "${PROG_HOME}/lib"; ls -1 toree-assembly-*.jar;)`
     TOREE_ASSEMBLY="${PROG_HOME}/lib/${KERNEL_ASSEMBLY}"
     if [ ! -f ${TOREE_ASSEMBLY} ]; then
         echo "Toree assembly '${PROG_HOME}/lib/toree-assembly-*.jar' is missing.  Exiting..."
@@ -70,10 +68,7 @@ launch_scala_kernel() {
     # Toree launcher jar path, plus required lib jars (toree-assembly)
     JARS="${TOREE_ASSEMBLY}"
     # Toree launcher app path
-    LAUNCHER_JAR=$( (
-        cd "${PROG_HOME}/lib"
-        ls -1 toree-launcher*.jar
-    ))
+    LAUNCHER_JAR=`(cd "${PROG_HOME}/lib"; ls -1 toree-launcher*.jar;)`
     LAUNCHER_APP="${PROG_HOME}/lib/${LAUNCHER_JAR}"
     if [ ! -f ${LAUNCHER_APP} ]; then
         echo "Scala launcher jar '${PROG_HOME}/lib/toree-launcher*.jar' is missing.  Exiting..."
@@ -96,22 +91,27 @@ launch_scala_kernel() {
 }
 
 # Ensure that required envs are present, check language before the dynamic values
-if [ -z "${KERNEL_LANGUAGE+x}" ]; then
+if [ -z "${KERNEL_LANGUAGE+x}" ]
+then
     echo "KERNEL_LANGUAGE is required.  Set this value in the image or when starting container."
     exit 1
 fi
-if [ -z "${KERNEL_ID+x}" ] || [ -z "${RESPONSE_ADDRESS+x}" ] || [ -z "${PUBLIC_KEY+x}" ]; then
+if [ -z "${KERNEL_ID+x}" ] || [ -z "${RESPONSE_ADDRESS+x}" ] || [ -z "${PUBLIC_KEY+x}" ]
+then
     echo "Environment variables, KERNEL_ID, RESPONSE_ADDRESS, and PUBLIC_KEY are required."
     exit 1
 fi
 
 # Invoke appropriate launcher based on KERNEL_LANGUAGE (case-insensitive)
 
-if [[ "${KERNEL_LANGUAGE,,}" == "python" ]]; then
+if [[ "${KERNEL_LANGUAGE,,}" == "python" ]]
+then
     launch_python_kernel
-elif [[ "${KERNEL_LANGUAGE,,}" == "scala" ]]; then
+elif [[ "${KERNEL_LANGUAGE,,}" == "scala" ]]
+then
     launch_scala_kernel
-elif [[ "${KERNEL_LANGUAGE,,}" == "r" ]]; then
+elif [[ "${KERNEL_LANGUAGE,,}" == "r" ]]
+then
     launch_R_kernel
 else
     echo "Unrecognized value for KERNEL_LANGUAGE: '${KERNEL_LANGUAGE}'!"
