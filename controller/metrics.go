@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
 	corev1 "k8s.io/api/core/v1"
@@ -84,24 +85,30 @@ func (m *Metrics) Collect(ch chan<- prometheus.Metric) {
 
 // scrape gets current running Kernel pods.
 func (m *Metrics) scrape() {
-
-	// Reset the current metrics to clear previous data
-	m.runningKernels.Reset()
-
 	podList := &corev1.PodList{}
 	err := m.cli.List(context.TODO(), podList)
 	if err != nil {
+		slog.Error("Failed to list pods", "error", err)
 		return
 	}
+
+	if len(podList.Items) == 0 {
+		slog.Debug("No pods found in the cluster")
+		return
+	}
+
 	podCache := make(map[string]float64)
 	for _, v := range podList.Items {
-		name, ok := v.ObjectMeta.GetLabels()[KERNEL_NAME_LABEL_NAME]
-		if ok && name == v.Name {
+		if name, ok := v.ObjectMeta.GetLabels()[KERNEL_NAME_LABEL_NAME]; ok && name == v.Name {
 			podCache[v.Namespace] += 1
 		}
 	}
 
-	for ns, v := range podCache {
-		m.runningKernels.WithLabelValues(ns).Set(v)
+	// Reset the current metrics to clear previous data
+	// TODO: Do we really need to reset?
+	m.runningKernels.Reset()
+	for ns, count := range podCache {
+		slog.Debug("Updating runningKernels metric", "namespace", ns, "count", count)
+		m.runningKernels.WithLabelValues(ns).Set(count)
 	}
 }

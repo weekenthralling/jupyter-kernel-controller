@@ -19,9 +19,7 @@ from Cryptodome.Random import get_random_bytes
 from Cryptodome.Util.Padding import pad
 from jupyter_client.connect import write_connection_file
 
-LAUNCHER_VERSION = (
-    1  # Indicate to server the version of this launcher (payloads may vary)
-)
+LAUNCHER_VERSION = 1  # Indicate to server the version of this launcher (payloads may vary)
 
 # Minimum port range size and max retries, let EG_ env values act as the default for b/c purposes
 min_port_range_size = int(
@@ -34,9 +32,7 @@ max_port_range_retries = int(
 log_level = os.getenv("LOG_LEVEL", os.getenv("EG_LOG_LEVEL", "10"))
 log_level = int(log_level) if log_level.isdigit() else log_level
 
-logging.basicConfig(
-    format="[%(levelname)1.1s %(asctime)s.%(msecs).03d %(name)s] %(message)s"
-)
+logging.basicConfig(format="[%(levelname)1.1s %(asctime)s.%(msecs).03d %(name)s] %(message)s")
 
 logger = logging.getLogger("launch_ipykernel")
 logger.setLevel(log_level)
@@ -109,9 +105,7 @@ def initialize_namespace(namespace, cluster_type="spark"):
         init_thread = ExceptionThread(target=initialize_spark_session)
         spark = WaitingForSparkSessionToBeInitialized("spark", init_thread, namespace)
         sc = WaitingForSparkSessionToBeInitialized("sc", init_thread, namespace)
-        sqlContext = WaitingForSparkSessionToBeInitialized(
-            "sqlContext", init_thread, namespace
-        )
+        sqlContext = WaitingForSparkSessionToBeInitialized("sqlContext", init_thread, namespace)
 
         def sql(query):
             """Placeholder function. When called will wait for Spark session to be
@@ -119,13 +113,7 @@ def initialize_namespace(namespace, cluster_type="spark"):
             return spark.sql(query)
 
         namespace.update(
-            {
-                "spark": spark,
-                "sc": sc,
-                "sql": sql,
-                "sqlContext": sqlContext,
-                "sqlCtx": sqlContext,
-            }
+            {"spark": spark, "sc": sc, "sql": sql, "sqlContext": sqlContext, "sqlCtx": sqlContext}
         )
 
         init_thread.start()
@@ -147,12 +135,8 @@ class WaitingForSparkSessionToBeInitialized:
 
     # private and public attributes that show up for tab completion,
     # to indicate pending initialization of Spark session
-    _WAITING_FOR_SPARK_SESSION_TO_BE_INITIALIZED = (
-        "Spark Session not yet initialized ..."
-    )
-    WAITING_FOR_SPARK_SESSION_TO_BE_INITIALIZED = (
-        "Spark Session not yet initialized ..."
-    )
+    _WAITING_FOR_SPARK_SESSION_TO_BE_INITIALIZED = "Spark Session not yet initialized ..."
+    WAITING_FOR_SPARK_SESSION_TO_BE_INITIALIZED = "Spark Session not yet initialized ..."
 
     # the same wrapper class is used for all Spark session variables, so we need to record the name of the variable
     def __init__(self, global_variable_name, init_thread, namespace):
@@ -167,11 +151,7 @@ class WaitingForSparkSessionToBeInitialized:
     def __getattr__(self, name):
         """Handle attribute getter."""
         # ignore tab-completion request for __members__ or __methods__ and ignore meta property requests
-        if (
-            name.startswith("__")
-            or name.startswith("_ipython_")
-            or name.startswith("_repr_")
-        ):
+        if name.startswith("__") or name.startswith("_ipython_") or name.startswith("_repr_"):
             return
         else:
             # wait on thread to initialize the Spark session variables in global variable scope
@@ -203,14 +183,10 @@ def _validate_port_range(port_range):
             )
             raise RuntimeError(msg) from None
     except ValueError as ve:
-        msg = (
-            f"Port range validation failed for range: '{port_range}'.  Error was: {ve}"
-        )
+        msg = f"Port range validation failed for range: '{port_range}'.  Error was: {ve}"
         raise RuntimeError(msg) from None
     except IndexError as ie:
-        msg = (
-            f"Port range validation failed for range: '{port_range}'.  Error was: {ie}"
-        )
+        msg = f"Port range validation failed for range: '{port_range}'.  Error was: {ie}"
         raise RuntimeError(msg) from None
 
     return lower_port, upper_port
@@ -427,9 +403,7 @@ def server_listener(sock, parent_pid, cluster_type):
     while not shutdown:
         request = get_server_request(sock)
         if request:
-            signum = (
-                -1
-            )  # prevent logging poll requests since that occurs every 3 seconds
+            signum = -1  # prevent logging poll requests since that occurs every 3 seconds
             if request.get("signum") is not None:
                 signum = int(request.get("signum"))
                 os.kill(parent_pid, signum)
@@ -452,7 +426,7 @@ def import_item(name):
     Returns
     -------
     mod : module object
-      The module that was imported.
+       The module that was imported.
     """
 
     parts = name.rsplit(".", 1)
@@ -471,10 +445,7 @@ def import_item(name):
 
 
 def start_ipython(
-    namespace,
-    cluster_type="spark",
-    kernel_class_name=DEFAULT_KERNEL_CLASS_NAME,
-    **kwargs,
+    namespace, cluster_type="spark", kernel_class_name=DEFAULT_KERNEL_CLASS_NAME, **kwargs
 ):
     """Start the ipython kernel."""
     from ipykernel.kernelapp import IPKernelApp
@@ -512,9 +483,7 @@ def start_ipython(
 
         os.remove(conn_file)
     except Exception as e:
-        print(
-            f"Could not delete connection file '{conn_file}' at exit due to error: {e}"
-        )
+        print(f"Could not delete connection file '{conn_file}' at exit due to error: {e}")
 
 
 def check_idle(kernel_idle_timeout):
@@ -609,9 +578,7 @@ if __name__ == "__main__":
     # This means that the default values for --spark-context-initialization-mode (none) and --cluster-type (spark)
     # will need to come from the mirrored args' default until deprecated items have been removed.
     parser.add_argument(
-        "connection_file",
-        nargs="?",
-        help="Connection file to write connection info (deprecated)",
+        "connection_file", nargs="?", help="Connection file to write connection info (deprecated)"
     )
     parser.add_argument(
         "--RemoteProcessProxy.response-address",
@@ -733,9 +700,7 @@ if __name__ == "__main__":
         cluster_type = "none"
 
     # If the connection file doesn't exist, then create it.
-    if (
-        connection_file and not os.path.isfile(connection_file)
-    ) or kernel_id is not None:
+    if (connection_file and not os.path.isfile(connection_file)) or kernel_id is not None:
         # use kernel_id as key
         key = kernel_id.encode()  # convert to bytes
         connection_file = determine_connection_file(connection_file, kernel_id)
@@ -757,12 +722,7 @@ if __name__ == "__main__":
                 msg = "Parameter '--public-key' must be provided!"
                 raise RuntimeError(msg)
             comm_socket = return_connection_info(
-                connection_file,
-                response_addr,
-                lower_port,
-                upper_port,
-                kernel_id,
-                public_key,
+                connection_file, response_addr, lower_port, upper_port, kernel_id, public_key
             )
             if comm_socket:  # socket in use, start server listener process
                 server_listener_process = Process(

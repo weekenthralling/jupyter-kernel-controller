@@ -1,7 +1,9 @@
 package config
 
 import (
-	log "github.com/sirupsen/logrus"
+	"log/slog"
+	"os"
+
 	"github.com/spf13/viper"
 )
 
@@ -35,8 +37,9 @@ func LoadConfig() *Config {
 	var config Config
 	// Read environment variables and decode into the Config struct
 	if err := viper.Unmarshal(&config); err != nil {
-		log.Fatalf("Unable to decode into struct: %v", err)
+		slog.Error("Error unmarshalling config", "error", err)
+		os.Exit(1)
 	}
-	log.Infof("Config: %+v", config)
+	slog.Info("Config details", "config", config)
 	return &config
 }
