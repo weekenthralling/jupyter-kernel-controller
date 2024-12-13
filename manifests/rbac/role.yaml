@@ -20,12 +20,6 @@ rules:
     verbs:
       - '*'
   - apiGroups:
-      - ""
-    resources:
-      - services
-    verbs:
-      - '*'
-  - apiGroups:
       - jupyter.org
     resources:
       - kernels

@@ -2,22 +2,16 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jupyter_kernel_controller/api/v1beta1"
-	"github.com/jupyter_kernel_controller/reconcilehelper"
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"k8s.io/client-go/tools/record"
 
 	"github.com/go-logr/logr"
-	"github.com/jupyter_kernel_controller/config"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,24 +46,10 @@ func ignoreNotFound(err error) error {
 // KernelReconciler reconciles a Kernel object
 type KernelReconciler struct {
 	client.Client
-	Config        *config.Config
 	Log           logr.Logger
 	Scheme        *runtime.Scheme
 	Metrics       *Metrics
 	EventRecorder record.EventRecorder
-}
-
-type KernelConnectionInfo struct {
-	ShellPort       uint64 `json:"shell_port"`
-	StdinPort       uint64 `json:"stdin_port"`
-	IOPubPort       uint64 `json:"iopub_port"`
-	ControlPort     uint64 `json:"control_port"`
-	HBPort          uint64 `json:"hb_port"`
-	IP              string `json:"ip"`
-	Key             string `json:"key"`
-	Transport       string `json:"transport"`
-	SignatureScheme string `json:"signature_scheme"`
-	KernelName      string `json:"kernel_name"`
 }
 
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
@@ -161,39 +141,6 @@ func (r *KernelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, nil
 	}
 
-	// Reconcile service by instance and set reference
-	service := r.generateService(instance, pod)
-	if err := ctrl.SetControllerReference(instance, service, r.Scheme); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	// Check if the Service already exists
-	foundService := &corev1.Service{}
-	justCreated := false
-	err = r.Get(ctx, types.NamespacedName{Name: service.Name, Namespace: service.Namespace}, foundService)
-	if err != nil && apierrs.IsNotFound(err) {
-		log.Info("Creating Service", "namespace", service.Namespace, "name", service.Name)
-		err = r.Create(ctx, service)
-		justCreated = true
-		if err != nil {
-			log.Error(err, "unable to create Service")
-			return ctrl.Result{}, err
-		}
-	} else if err != nil {
-		log.Error(err, "error getting Service")
-		return ctrl.Result{}, err
-	}
-
-	// Update the foundService object and write the result back if there are any changes
-	if !justCreated && reconcilehelper.CopyServiceFields(service, foundService) {
-		log.Info("Updating Service\n", "namespace", service.Namespace, "name", service.Name)
-		err = r.Update(ctx, foundService)
-		if err != nil {
-			log.Error(err, "unable to update Service")
-			return ctrl.Result{}, err
-		}
-	}
-
 	// Update kernel status with pod conditions
 	if err := r.updateKernelStatus(instance, foundPod, req); err != nil {
 		return ctrl.Result{}, err
@@ -213,40 +160,9 @@ func (r *KernelReconciler) updateKernelResource(instance *v1beta1.Kernel) error 
 
 	ctx := context.Background()
 
-	// Define kernel ports to check and their corresponding values from the config
-	setKerneStartupEnvIfNotFound := func(currentKernelEnv map[string]corev1.EnvVar,
-		kernelEnv *[]corev1.EnvVar, name string, value string) {
-		if _, found := currentKernelEnv[name]; !found {
-			*kernelEnv = append(*kernelEnv, corev1.EnvVar{
-				Name:  name,
-				Value: value,
-			})
-		}
-	}
-	cfg := r.Config
-	kernelStartupEnv := map[string]string{
-		"KERNEL_ID":           uuid.New().String(),
-		"KERNEL_SHELL_PORT":   strconv.Itoa(cfg.KernelShellPort),
-		"KERNEL_IOPUB_PORT":   strconv.Itoa(cfg.KernelIOPubPort),
-		"KERNEL_STDIN_PORT":   strconv.Itoa(cfg.KernelStdinPort),
-		"KERNEL_HB_PORT":      strconv.Itoa(cfg.KernelHBPort),
-		"KERNEL_CONTROL_PORT": strconv.Itoa(cfg.KernelControlPort),
-	}
-
 	kernelEnv := &instance.Spec.Template.Spec.Containers[0].Env
-	// Create a map to hold kernel environment variables
-	currentKernelEnv := make(map[string]corev1.EnvVar)
-	for _, env := range *kernelEnv {
-		currentKernelEnv[env.Name] = env
-	}
 
-	// Set kernel startup env
-	for envName, envValue := range kernelStartupEnv {
-		setKerneStartupEnvIfNotFound(currentKernelEnv, kernelEnv, envName, envValue)
-	}
-
-	// Set kernel connection info annotation
-	annotations, _ := r.createKernelAnnotation(kernelEnv, instance.Name, instance.Namespace)
+	annotations := r.createKernelAnnotation(kernelEnv)
 	if instance.Annotations == nil {
 		instance.Annotations = annotations
 	} else {
@@ -278,8 +194,8 @@ func (r *KernelReconciler) updateKernelResource(instance *v1beta1.Kernel) error 
 	return nil
 }
 
-// createKernelAnnotation create kernel annotation from kernel env
-func (r *KernelReconciler) createKernelAnnotation(kernelEnv *[]corev1.EnvVar, name, namespace string) (map[string]string, error) {
+// createKernelAnnotation create kernel annotation by kernel env
+func (r *KernelReconciler) createKernelAnnotation(kernelEnv *[]corev1.EnvVar) map[string]string {
 	currentKernelEnv := make(map[string]string)
 	for _, envItem := range *kernelEnv {
 		currentKernelEnv[envItem.Name] = envItem.Value
@@ -289,32 +205,7 @@ func (r *KernelReconciler) createKernelAnnotation(kernelEnv *[]corev1.EnvVar, na
 	kernelAnnotations := make(map[string]string)
 	kernelAnnotations[KERNEL_ID_ANNO_NAME] = currentKernelEnv["KERNEL_ID"]
 
-	// Set connection annotation
-	formatEnvPort := func(envName string) uint64 {
-		port, _ := strconv.ParseUint(currentKernelEnv[envName], 10, 64)
-		return port
-	}
-	kernelConnectionInfo := KernelConnectionInfo{
-		ShellPort:       formatEnvPort("KERNEL_SHELL_PORT"),
-		IOPubPort:       formatEnvPort("KERNEL_IOPUB_PORT"),
-		StdinPort:       formatEnvPort("KERNEL_STDIN_PORT"),
-		ControlPort:     formatEnvPort("KERNEL_CONTROL_PORT"),
-		HBPort:          formatEnvPort("KERNEL_HB_PORT"),
-		IP:              fmt.Sprintf("%s.%s.svc.cluster.local", name, namespace),
-		Key:             currentKernelEnv["KERNEL_ID"],
-		Transport:       "tcp",
-		SignatureScheme: "hmac-sha256",
-		KernelName:      "",
-	}
-
-	connectionAnnotation, err := json.Marshal(kernelConnectionInfo)
-	if err != nil {
-		r.Log.Error(err, "Error converting connection label to json")
-		return nil, err
-	}
-	kernelAnnotations[KERNEL_CONNECTION_ANNO_NAME] = string(connectionAnnotation)
-
-	return kernelAnnotations, nil
+	return kernelAnnotations
 }
 
 // generatePod generate pod from kernel spec template
@@ -348,44 +239,6 @@ func (r *KernelReconciler) generatePodResource(instance *v1beta1.Kernel) *corev1
 	// Set kernel container name
 	pod.Spec.Containers[0].Name = instance.Name
 	return pod
-}
-
-// generateService generate service by kernel
-func (r *KernelReconciler) generateService(instance *v1beta1.Kernel, pod *corev1.Pod) *corev1.Service {
-	var servicePort []corev1.ServicePort
-	addServicePort := func(envName, portName string) {
-		for _, env := range pod.Spec.Containers[0].Env {
-			if env.Name == envName {
-				port, _ := strconv.Atoi(env.Value)
-				servicePort = append(servicePort, corev1.ServicePort{
-					Name:       portName,
-					Port:       int32(port),
-					Protocol:   "TCP",
-					TargetPort: intstr.FromInt32(int32(port)),
-				})
-			}
-		}
-	}
-
-	// add service port from pod container env
-	addServicePort("KERNEL_SHELL_PORT", "shell-port")
-	addServicePort("KERNEL_IOPUB_PORT", "iopub-port")
-	addServicePort("KERNEL_STDIN_PORT", "stdin-port")
-	addServicePort("KERNEL_HB_PORT", "hb-port")
-	addServicePort("KERNEL_CONTROL_PORT", "control-port")
-
-	svc := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      instance.Name,
-			Namespace: instance.Namespace,
-		},
-		Spec: corev1.ServiceSpec{
-			Type:     "ClusterIP",
-			Selector: map[string]string{KERNEL_NAME_LABEL_NAME: instance.Name},
-			Ports:    servicePort,
-		},
-	}
-	return svc
 }
 
 func (r *KernelReconciler) updateKernelStatus(kernel *v1beta1.Kernel, pod *corev1.Pod, req ctrl.Request) error {
