@@ -22,11 +22,12 @@ import (
 )
 
 const (
-	KERNEL_ID_ANNO_NAME         = "jupyter.org/kernel-id"
-	KERNEL_CONNECTION_ANNO_NAME = "jupyter.org/kernel-connection-info"
-	KERNEL_NAME_LABEL_NAME      = "jupyter.org/kernel-name"
-	KERNEL_UPDATED_LABEL_NAME   = "jupyter-kernel-controller/updated"
-	KERNEL_UPDATED_LABEL_VALUE  = "True"
+	KERNEL_ID_ANNO_NAME        = "jupyter.org/kernel-id"
+	KERNEL_NAME_LABEL_NAME     = "jupyter.org/kernel-name"
+	KERNEL_UPDATED_LABEL_NAME  = "jupyter-kernel-controller/updated"
+	KERNEL_UPDATED_LABEL_VALUE = "True"
+
+	KERNEL_CULLING_ANNO_NAME = "jupyter.org/kernel-deletion"
 
 	DEFAULT_RESTART_POLICY = "Never"
 )
@@ -127,10 +128,10 @@ func (r *KernelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	// If kernel completed, indicates that the kernel is automatically shut down due to long-term idleness
-	// Delete the kernel resource
-	if foundPod.Status.Phase == corev1.PodSucceeded {
-		log.Info("Culling idle kernel", "namespaces", instance.Namespace, "name", instance.Name)
+	// Clean up kernel if annotation `jupyter.org/kernel-deletion=True`
+	if instance.Annotations != nil &&
+		instance.Annotations[KERNEL_CULLING_ANNO_NAME] == "True" {
+		log.Info("Culling idle kernel", "namespace", instance.Namespace, "name", instance.Name)
 		if err := r.Delete(ctx, instance, &client.DeleteOptions{}); err != nil {
 			log.Error(err, "culling idle kernel error")
 			return ctrl.Result{}, err
