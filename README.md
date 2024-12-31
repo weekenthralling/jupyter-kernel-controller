@@ -1,115 +1,114 @@
-# Jupyter Kernel Controller
+# jupyter-kernel-controller
+// TODO(user): Add simple overview of use/purpose
 
-The controller allows users to create a custom resource "Kernel" (jupyter kernel).
+## Description
+// TODO(user): An in-depth paragraph about your project and overview of use
 
-It has been developed using Golang and [Kubebuilder](https://book.kubebuilder.io/quick-start.html).
+## Getting Started
 
-## Spec
+### Prerequisites
+- go version v1.22.0+
+- docker version 17.03+.
+- kubectl version v1.11.3+.
+- Access to a Kubernetes v1.11.3+ cluster.
 
-First, create configMap from kernel launch file. You can read this [document](./kernel_launch/README.md) to understand the content of the script or build your own image as needed.
+### To Deploy on the cluster
+**Build and push your image to the location specified by `IMG`:**
 
 ```sh
-kubectl -n <your-namespace> create configmap kernel-launch-scripts --from-file=kernel_launch/bootstrap-kernel.sh --from-file=kernel_launch/launch_ipykernel.py
+make docker-build docker-push IMG=<some-registry>/jupyter-kernel-controller:tag
 ```
 
-The user needs to specify the PodSpec for the Jupyter kernel. For example:
+**NOTE:** This image ought to be published in the personal registry you specified.
+And it is required to have access to pull the image from the working environment.
+Make sure you have the proper permission to the registry if the above commands don’t work.
 
-```yaml
-apiVersion: jupyter.org/v1
-kind: Kernel
-metadata:
-  name: foo
-  namespace: default
-spec:
-  template:
-    spec:
-      containers:
-        - env:
-          - name: KERNEL_IDLE_TIMEOUT
-            value: "1800"
-          - name: KERNEL_ID
-            value: 4cea8598-de71-43f7-bbff-0f60c6484595
-          image: elyra/kernel-py:3.2.3
-          name: main
-          volumeMounts:
-            - mountPath: /usr/local/bin/bootstrap-kernel.sh
-              name: kernel-launch-vol
-              subPath: bootstrap-kernel.sh
-            - mountPath: /usr/local/bin/kernel-launchers/python/scripts/launch_ipykernel.py
-              name: kernel-launch-vol
-              subPath: launch_ipykernel.py
-      restartPolicy: Never
-      volumes:
-        - configMap:
-            defaultMode: 493
-            name: kernel-launch-scripts
-          name: kernel-launch-vol
+**Install the CRDs into the cluster:**
+
+```sh
+make install
 ```
 
-The required fields are `containers[0].image`. If you’re using a custom image, you might also need to specify `containers[0].command` and `containers[0].args`. That is, the user should specify what and how to run.
+**Deploy the Manager to the cluster with the image specified by `IMG`:**
 
-All other fields will be filled in with default value if not specified.
-
-## Environment parameters
-
-| Parameter           | Description                                           |
-| ------------------- | ----------------------------------------------------- |
-| KERNEL_SHELL_PORT   | The port of kernel shell socket, default:52317        |
-| KERNEL_IOPUB_PORT   | The port of kernel iopub socket port, default:52318   |
-| KERNEL_STDIN_PORT   | The port of kernel stdin socket port, default:52319   |
-| KERNEL_HB_PORT      | The port of kernel hb socket port, default:52320      |
-| KERNEL_CONTROL_PORT | The port of kernel control socket port, default:52321 |
-
-## Commandline parameters
-
-`metrics-addr`: The address the metric endpoint binds to. The default value is `:8080`.
-
-`probe-addr`: The address the health endpoint binds to. The default value is `:8081`.
-
-`enable-leader-election`: Enable leader election for controller manager. Enabling this will ensure there is only one
-active controller manager. The default value is `false`.
-
-## Implementation detail
-
-This part is WIP as we are still developing.
-
-Under the hood, the controller creates a pod to run the kernel instance, and a Service for it.
-
-## Build, Run, Deploy
-
-You’ll need a Kubernetes cluster to run against. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for
-testing, or run against a remote cluster.
-
-**Note:** Your controller will automatically use the current context in your kubeconfig file (i.e. whatever
-cluster `kubectl cluster-info` shows).
-
-### Build and Run the Controller locally
-
-In order to build the controller you will need to use Go 1.22 and up in order to have Go Modules support. You will also
-need to have a k8s cluster.
-
-1. Install the CRDs into the cluster and Run your controller
-
-```shell
-# build crd and deploy
-kustomize build manifests/base > jupyter-kernel-controller.yaml
-# deploy them
-kubectl -n <your-namespaces> apply -f jupyter-kernel-controller.yaml
+```sh
+make deploy IMG=<some-registry>/jupyter-kernel-controller:tag
 ```
 
-2. Verify that the controller is running in your namespace:
+> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
+privileges or be logged in as admin.
 
+**Create instances of your solution**
+You can apply the samples (examples) from the config/sample:
+
+```sh
+kubectl apply -k config/samples/
 ```
-$ kubectl get pods -l app=kernel-controller -n <your-namespaces>
-NAME                                           READY   STATUS    RESTARTS   AGE
-kernel-controller-deployment-564d76877-mqsm8   1/1     Running   0          16s
+
+>**NOTE**: Ensure that the samples has default values to test it out.
+
+### To Uninstall
+**Delete the instances (CRs) from the cluster:**
+
+```sh
+kubectl delete -k config/samples/
 ```
 
-## TODO
+**Delete the APIs(CRDs) from the cluster:**
 
-- Currently, only the startup script of the python kernel has been modified. When `KERNEL_LANGUAGE=python`, the socket
-  port passed into the kernel can be customized.
+```sh
+make uninstall
+```
+
+**UnDeploy the controller from the cluster:**
+
+```sh
+make undeploy
+```
+
+## Project Distribution
+
+Following are the steps to build the installer and distribute this project to users.
+
+1. Build the installer for the image built and published in the registry:
+
+```sh
+make build-installer IMG=<some-registry>/jupyter-kernel-controller:tag
+```
+
+NOTE: The makefile target mentioned above generates an 'install.yaml'
+file in the dist directory. This file contains all the resources built
+with Kustomize, which are necessary to install this project without
+its dependencies.
+
+2. Using the installer
+
+Users can just run kubectl apply -f <URL for YAML BUNDLE> to install the project, i.e.:
+
+```sh
+kubectl apply -f https://raw.githubusercontent.com/<org>/jupyter-kernel-controller/<tag or branch>/dist/install.yaml
+```
+
+## Contributing
+// TODO(user): Add detailed information on how you would like others to contribute to this project
+
+**NOTE:** Run `make help` for more information on all potential `make` targets
+
+More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
 
 ## License
 
-`Jupyter-Kernel-Controller` is distributed under the terms of the [Apache 2.0](https://spdx.org/licenses/Apache-2.0.html) license.
+Copyright 2024.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+

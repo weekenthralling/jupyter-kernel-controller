@@ -1,0 +1,32 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - jupyter.org
+  resources:
+  - kernels
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - jupyter.org
+  resources:
+  - kernels/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - jupyter.org
+  resources:
+  - kernels/status
+  verbs:
+  - get
+  - patch
+  - update
