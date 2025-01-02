@@ -7,7 +7,7 @@ metadata:
   labels:
     app.kubernetes.io/name: jupyter-kernel-controller
     app.kubernetes.io/managed-by: kustomize
-  name: allow-metrics-traffic
+  name: kernel-controller-allow-metrics-traffic
   namespace: system
 spec:
   podSelector:

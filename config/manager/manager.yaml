@@ -5,12 +5,12 @@ metadata:
     control-plane: controller-manager
     app.kubernetes.io/name: jupyter-kernel-controller
     app.kubernetes.io/managed-by: kustomize
-  name: system
+  name: jupyter-system
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: controller-manager
+  name: jupyter-kernel-controller
   namespace: system
   labels:
     control-plane: controller-manager
@@ -63,7 +63,7 @@ spec:
         args:
           - --leader-elect
           - --health-probe-bind-address=:8081
-        image: controller:latest
+        image: ghcr.io/weekenthralling/jupyter-kernel-controller:latest
         name: manager
         securityContext:
           allowPrivilegeEscalation: false
@@ -91,5 +91,5 @@ spec:
           requests:
             cpu: 10m
             memory: 64Mi
-      serviceAccountName: controller-manager
+      serviceAccountName: kernel-controller-serviceaccount
       terminationGracePeriodSeconds: 10

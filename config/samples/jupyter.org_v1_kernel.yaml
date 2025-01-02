@@ -6,4 +6,32 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: kernel-sample
 spec:
-  # TODO(user): Add fields here
+  idleTimeoutSeconds: 3600
+  cullingIntervalSeconds: 60
+  template:
+    spec:
+      containers:
+      - env:
+        - name: KERNEL_OWNER
+          value: default
+        - name: KERNEL_SPEC_NAME
+          value: python
+        - name: KERNEL_NAMESPACE
+          value: default
+        - name: KERNEL_IMAGE
+          value: elyra/kernel-py:3.2.3
+        - name: KERNEL_WORKING_DIR
+          value: /mnt/data
+        - name: KERNEL_ID
+          value: 433a87be-0f91-45c1-9609-02b6af80baf8
+        image: elyra/kernel-py:3.2.3
+        name: main
+        volumeMounts:
+        - mountPath: /mnt/data
+          name: shared-vol
+        workingDir: /mnt/data
+      restartPolicy: Never
+      volumes:
+      - emptyDir:
+          medium: Memory
+        name: shared-vol

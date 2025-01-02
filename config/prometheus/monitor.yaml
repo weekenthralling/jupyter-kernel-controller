@@ -6,7 +6,7 @@ metadata:
     control-plane: controller-manager
     app.kubernetes.io/name: jupyter-kernel-controller
     app.kubernetes.io/managed-by: kustomize
-  name: controller-manager-metrics-monitor
+  name: kernel-controller-metrics-monitor
   namespace: system
 spec:
   endpoints:

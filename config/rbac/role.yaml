@@ -2,8 +2,24 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: manager-role
+  name: kernel-controller-role
 rules:
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - '''*'''
 - apiGroups:
   - jupyter.org
   resources:

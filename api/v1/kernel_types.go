@@ -27,9 +27,7 @@ import (
 // KernelSpec defines the desired state of Kernel.
 type KernelSpec struct {
 	Template corev1.PodTemplateSpec `json:"template"`
-	// IdleTimeoutSeconds is the number of seconds of inactivity before a kernel is automatically deleted.
-	// If provided, the controller will create a sidecar container to monitor the kernel's activity.
-	// +optional
+	// IdleTimeoutSeconds is the number of seconds of inactivity before a kernel is automatically deleted. default is 3600 seconds.
 	IdleTimeoutSeconds int32 `json:"idleTimeoutSeconds,omitempty"`
 	// CullingIntervalSeconds is the number of seconds between checking for idle kernel. default is 60 seconds.
 	CullingIntervalSeconds int32 `json:"cullingIntervalSeconds,omitempty"`
