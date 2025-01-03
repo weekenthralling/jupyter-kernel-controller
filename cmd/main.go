@@ -37,6 +37,7 @@ import (
 
 	jupyterorgv1 "github.com/kernel_controller/api/v1"
 	"github.com/kernel_controller/internal/controller"
+	"github.com/kernel_controller/internal/reconcilehelper"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -142,9 +143,22 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Generate RSA key pair
+	privateKey, publicKey, err := reconcilehelper.GenerateRSAKeyPair(2048)
+	if err != nil {
+		setupLog.Error(err, "unable to generate RSA key pair")
+		os.Exit(1)
+	}
+	privateKeyStr := reconcilehelper.PrivateKeyToString(privateKey)
+	publicKeyStr := reconcilehelper.PublicKeyToString(publicKey)
+
 	if err = (&controller.KernelReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:        mgr.GetClient(),
+		Scheme:        mgr.GetScheme(),
+		Log:           ctrl.Log.WithName("controllers").WithName("Kernel"),
+		EventRecorder: mgr.GetEventRecorderFor("kernel-controller"),
+		PrivateKey:    privateKeyStr,
+		PublicKey:     publicKeyStr,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kernel")
 		os.Exit(1)
