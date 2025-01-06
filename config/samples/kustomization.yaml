@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- jupyter.org_v1_kernel.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples
