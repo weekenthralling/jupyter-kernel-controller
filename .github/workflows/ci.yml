@@ -1,12 +1,6 @@
 name: Lint && Test
 
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - 'README.md'
-      - 'config/**'
   pull_request:
     branches:
       - main
@@ -15,7 +9,7 @@ on:
       - 'config/**'
 
 jobs:
-  lint-test:
+  build:
     name: Lint && Test
     runs-on: ubuntu-latest
     steps:
@@ -25,11 +19,15 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '~1.22'
-      - name: Run linter
+      - name: Lint
         uses: golangci/golangci-lint-action@v6
         with:
           version: v1.61
-      - name: Running Tests
+      - name: Build
+        run: |
+          go mod tidy
+          make build
+      - name: Test
         run: |
           go mod tidy
           make test
