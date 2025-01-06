@@ -22,6 +22,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"log"
+	"regexp"
 )
 
 func GenerateRSAKeyPair(bits int) (*rsa.PrivateKey, *rsa.PublicKey, error) {
@@ -43,7 +44,8 @@ func PrivateKeyToString(privateKey *rsa.PrivateKey) string {
 		Type:  "RSA PRIVATE KEY",
 		Bytes: privASN1,
 	})
-	return string(privPem)
+
+	return cleanPEM(privPem)
 }
 
 func PublicKeyToString(publicKey *rsa.PublicKey) string {
@@ -56,5 +58,15 @@ func PublicKeyToString(publicKey *rsa.PublicKey) string {
 		Type:  "PUBLIC KEY",
 		Bytes: pubASN1,
 	})
-	return string(pubPem)
+
+	return cleanPEM(pubPem)
+}
+
+// cleanPEM uses regular expressions to clean the PEM format
+// removing newlines and leading and trailing tags
+func cleanPEM(pemData []byte) string {
+	// Remove tabs and newlines using regular expression matching
+	re := regexp.MustCompile(`-----BEGIN [^-]+-----|-----END [^-]+-----|\n`)
+	cleanedPem := re.ReplaceAllString(string(pemData), "")
+	return cleanedPem
 }

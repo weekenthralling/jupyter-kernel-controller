@@ -35,9 +35,9 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	jupyterorgv1 "github.com/kernel_controller/api/v1"
-	"github.com/kernel_controller/internal/controller"
-	"github.com/kernel_controller/internal/reconcilehelper"
+	jupyterorgv1 "github.com/kernel-controller/api/v1"
+	"github.com/kernel-controller/internal/controller"
+	"github.com/kernel-controller/internal/reconcilehelper"
 	// +kubebuilder:scaffold:imports
 )
 

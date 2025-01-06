@@ -34,7 +34,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	jupyterorgv1 "github.com/kernel_controller/api/v1"
+	jupyterorgv1 "github.com/kernel-controller/api/v1"
 	// +kubebuilder:scaffold:imports
 )
 

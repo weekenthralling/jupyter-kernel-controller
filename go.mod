@@ -1,4 +1,4 @@
-module github.com/kernel_controller
+module github.com/kernel-controller
 
 go 1.23.4
 
