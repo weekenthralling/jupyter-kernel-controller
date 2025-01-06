@@ -33,13 +33,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/go-logr/logr"
-	jupyterorgv1 "github.com/kernel_controller/api/v1"
+	jupyterorgv1 "github.com/kernel-controller/api/v1"
 )
 
 const KernelNameLabel = "jupyter.org/kernel-name"
 const KernelIdleLabel = "jupyrator.org/kernel-idle"
 
-const DefaultMonitorContainerImage = "weekenthralling/kernel-monitor:0.0.2"
+const DefaultMonitorContainerImage = "ghcr.io/weekenthralling/kernel-monitor:latest"
 
 /*
 We generally want to ignore (not requeue) NotFound errors, since we'll get a
@@ -300,6 +300,13 @@ func (r *KernelReconciler) generatePod(instance *jupyterorgv1.Kernel) *corev1.Po
 	// Set kernel container name
 	pod.Spec.Containers[0].Name = instance.Name
 
+	// TODO: Set kernel container command to wait for the kernel monitor to be ready
+	pod.Spec.Containers[0].Command = []string{
+		"/bin/bash",
+		"-c",
+		"until (echo -n > /dev/tcp/127.0.0.1/65432) 2>/dev/null; do sleep 1; done; exec /usr/local/bin/bootstrap-kernel.sh",
+	}
+
 	// Set Kernel startup envs
 	pod.Spec.Containers[0].Env = append(pod.Spec.Containers[0].Env, corev1.EnvVar{
 		Name:  "PUBLIC_KEY",
@@ -320,7 +327,7 @@ func (r *KernelReconciler) generatePod(instance *jupyterorgv1.Kernel) *corev1.Po
 
 	// Set sidecar container monitoring kernel activity
 	pod.Spec.Containers = append(pod.Spec.Containers, corev1.Container{
-		Name:  "kernel-monitor",
+		Name:  "monitor",
 		Image: DefaultMonitorContainerImage,
 		Args: []string{
 			"--idle-timeout",
@@ -358,6 +365,7 @@ func (r *KernelReconciler) generatePod(instance *jupyterorgv1.Kernel) *corev1.Po
 		},
 	})
 
+	pod.Spec.RestartPolicy = corev1.RestartPolicyNever
 	return pod
 }
 
