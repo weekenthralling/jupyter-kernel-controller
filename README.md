@@ -1,8 +1,8 @@
-# jupyter-kernel-controller
-// TODO(user): Add simple overview of use/purpose
+# Jupyter Kernel Controller
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+The controller allows users to create a custom resource "Kernel" (jupyter kernel).
+
+It has been developed using Golang and [Kubebuilder](https://book.kubebuilder.io/quick-start.html).
 
 ## Getting Started
 
@@ -89,9 +89,6 @@ Users can just run kubectl apply -f <URL for YAML BUNDLE> to install the project
 kubectl apply -f https://raw.githubusercontent.com/<org>/jupyter-kernel-controller/<tag or branch>/dist/install.yaml
 ```
 
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
-
 **NOTE:** Run `make help` for more information on all potential `make` targets
 
 More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
@@ -111,4 +108,3 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-
