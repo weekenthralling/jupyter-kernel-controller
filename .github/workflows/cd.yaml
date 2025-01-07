@@ -48,7 +48,3 @@ jobs:
     - name: Build and push multi-arch docker image on release
       run: |
         make docker-buildx IMG=${{ steps.meta.outputs.tags }}
-    - name: Build and push latest multi-arch docker image
-      id: latest
-      run: |
-        make docker-buildx IMG=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
