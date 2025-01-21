@@ -37,6 +37,7 @@ import (
 
 	jupyterorgv1 "github.com/kernel-controller/api/v1"
 	"github.com/kernel-controller/internal/controller"
+	"github.com/kernel-controller/internal/metrics"
 	"github.com/kernel-controller/internal/reconcilehelper"
 	// +kubebuilder:scaffold:imports
 )
@@ -156,6 +157,7 @@ func main() {
 		Client:        mgr.GetClient(),
 		Scheme:        mgr.GetScheme(),
 		Log:           ctrl.Log.WithName("controllers").WithName("Kernel"),
+		Metrics:       metrics.NewMetrics(mgr.GetClient()),
 		EventRecorder: mgr.GetEventRecorderFor("kernel-controller"),
 		PrivateKey:    privateKeyStr,
 		PublicKey:     publicKeyStr,
