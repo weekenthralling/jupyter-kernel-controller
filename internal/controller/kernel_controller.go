@@ -34,6 +34,7 @@ import (
 
 	"github.com/go-logr/logr"
 	jupyterorgv1 "github.com/kernel-controller/api/v1"
+	"github.com/kernel-controller/internal/metrics"
 )
 
 const KernelNameLabel = "jupyter.org/kernel-name"
@@ -58,6 +59,7 @@ type KernelReconciler struct {
 	client.Client
 	Scheme        *runtime.Scheme
 	Log           logr.Logger
+	Metrics       *metrics.Metrics
 	EventRecorder record.EventRecorder
 	PrivateKey    string
 	PublicKey     string
@@ -122,11 +124,14 @@ func (r *KernelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Culling kernel if idle for more than the specified time
 	if instance.Labels[KernelIdleLabel] == "true" {
+		t := time.Now()
 		log.Info("Culling idle Kernel", "namespace", instance.Namespace, "name", instance.Name)
 		if err := r.Delete(ctx, instance); err != nil {
 			log.Error(err, "unable to delete Kernel")
 			return ctrl.Result{}, err
 		}
+		r.Metrics.KernelCullingCount.WithLabelValues(instance.Namespace, instance.Name).Inc()
+		r.Metrics.KernelCullingTimestamp.WithLabelValues(instance.Namespace, instance.Name).Set(float64(t.Unix()))
 	}
 
 	// Reconcile pod by instance and set reference
@@ -139,9 +144,12 @@ func (r *KernelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	err := r.Get(ctx, types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, foundPod)
 	if err != nil && apierrs.IsNotFound(err) {
 		log.Info("Creating pod", "namespace", pod.Namespace, "name", pod.Name)
+		r.Metrics.KernelCreation.WithLabelValues(pod.Namespace).Inc()
 		err = r.Create(ctx, pod)
 		if err != nil {
 			log.Error(err, "unable to create pod")
+			r.Metrics.KernelFailCreation.WithLabelValues(pod.Namespace).Inc()
+
 			r.EventRecorder.Eventf(instance, corev1.EventTypeWarning, "PodCreationFailed", "Failed to create pod %s:%v", pod.Name, err)
 			return ctrl.Result{}, err
 		}
