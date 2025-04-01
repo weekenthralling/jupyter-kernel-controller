@@ -1,7 +1,6 @@
 module github.com/kernel-controller
 
-go 1.23.4
-toolchain go1.24.1
+go 1.24
 
 require (
 	github.com/go-logr/logr v1.4.2

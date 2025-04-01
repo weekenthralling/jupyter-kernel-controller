@@ -1,13 +1,13 @@
 {
   "name": "Kernel Controller DevContainer",
-  "image": "golang:1.22",
+  "image": "golang:1.24",
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
     "ghcr.io/devcontainers/features/git:1": {}
   },
-
-  "runArgs": ["--network=host"],
-
+  "runArgs": [
+    "--network=host"
+  ],
   "customizations": {
     "vscode": {
       "settings": {
@@ -19,7 +19,5 @@
       ]
     }
   },
-
   "onCreateCommand": "bash .devcontainer/post-install.sh"
 }
-
