@@ -42,7 +42,7 @@ jobs:
           type=semver,pattern={{version}}
           type=sha,priority=850,prefix=
     - name: Setup QEMU
-      uses: docker/setup-qemu-action@v3
+      uses: docker/setup-qemu-action@v4
     - name: Setup Docker Buildx
       uses: docker/setup-buildx-action@v3
     - name: Build and push multi-arch docker image on release
